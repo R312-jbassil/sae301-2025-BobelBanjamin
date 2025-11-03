@@ -11,6 +11,7 @@
   "dependencies": {
     "@astrojs/node": "^9.5.0",
     "astro": "^5.15.3",
+    "esbuild": "^0.25.12",
     "pocketbase": "^0.26.3"
   }
 }
