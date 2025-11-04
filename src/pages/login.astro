@@ -8,6 +8,8 @@ import "../styles/global.css";
 <html lang="fr">
     <head>
         <title>Connexion</title>
+        <meta name="viewport" content="width=device-width" />
+        <meta charset="UTF-8" />
         <link
             href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap"
             rel="stylesheet"
@@ -24,21 +26,6 @@ import "../styles/global.css";
                 <label>
                     <span>EMAIL</span>
                     <div class="input-icon">
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            style="vertical-align:middle"
-                        >
-                            <rect width="20" height="20" fill="none"
-                            ></rect><path
-                                d="M4 4h12v12H4z"
-                                stroke="#2563eb"
-                                fill="none"></path><path
-                                d="M4 4l8 6 8-6"
-                                stroke="#2563eb"
-                                fill="none"></path>
-                        </svg>
                         <input
                             type="email"
                             name="email"
@@ -50,19 +37,6 @@ import "../styles/global.css";
                 <label>
                     <span>MOT DE PASSE</span>
                     <div class="input-icon">
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            style="vertical-align:middle"
-                        >
-                            <circle
-                                cx="10"
-                                cy="10"
-                                r="8"
-                                stroke="#2563eb"
-                                fill="none"></circle>
-                        </svg>
                         <input
                             type="password"
                             name="password"
@@ -72,21 +46,40 @@ import "../styles/global.css";
                     </div>
                 </label>
                 <button type="submit" class="auth-btn">SE CONNECTER</button>
+                <div
+                    id="login-error"
+                    style="color:#d32f2f; margin-top:.9em; text-align:center; display:none"
+                >
+                </div>
             </form>
         </main>
         <script type="module">
-            import { pb } from "../lib/pb.js";
-            document.getElementById("login-form").onsubmit = async (e) => {
+            const form = document.getElementById("login-form");
+            const errorBox = document.getElementById("login-error");
+
+            form.onsubmit = async (e) => {
                 e.preventDefault();
+                errorBox.style.display = "none";
                 const email = e.target.email.value;
                 const password = e.target.password.value;
+
                 try {
-                    await pb
-                        .collection("users")
-                        .authWithPassword(email, password);
-                    window.location.href = "/";
+                    const res = await fetch("/api/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = "/";
+                    } else {
+                        errorBox.textContent =
+                            data.error || "❌ Email ou mot de passe invalide";
+                        errorBox.style.display = "block";
+                    }
                 } catch (err) {
-                    alert("Erreur login : " + err.message);
+                    errorBox.textContent = "❌ Erreur serveur";
+                    errorBox.style.display = "block";
                 }
             };
         </script>
@@ -139,8 +132,8 @@ import "../styles/global.css";
                 border: 1.6px solid #2563eb;
                 border-radius: 8px;
                 box-shadow: 0 8px 30px 0 #2563eb14;
-                width: 360px;
-                max-width: 90vw;
+                width: 380px;
+                max-width: 95vw;
                 padding: 2rem 2rem 1.4rem 2rem;
                 display: flex;
                 flex-direction: column;
@@ -178,23 +171,18 @@ import "../styles/global.css";
                 font-weight: 700;
                 padding: 1rem 0;
                 border: none;
-                font-size: 1rem;
+                font-size: 1.08rem;
                 border-radius: 0.4rem;
                 margin-top: 1.3rem;
                 letter-spacing: 0.045em;
                 cursor: pointer;
             }
-            .auth-under {
-                text-align: center;
-                margin-top: 0.8rem;
-                font-size: 0.85rem;
-            }
-            .auth-under a {
-                color: #2563eb;
-            }
             @media (max-width: 600px) {
                 .auth-bgword {
                     font-size: 3.1rem;
+                }
+                .auth-box {
+                    padding: 1.1rem;
                 }
             }
         </style>

@@ -1,5 +1,18 @@
 ---
+import PocketBase from "pocketbase";
 
+let user = null;
+
+// Lecture SSR du cookie d'auth; fonctionne si tes pages Astro sont server-side/render (pas static)
+if (Astro.cookies?.get("pb_auth")) {
+    try {
+        const pb = new PocketBase(
+            import.meta.env.PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090",
+        );
+        pb.authStore.loadFromCookie(Astro.cookies.get("pb_auth").value);
+        user = pb.authStore.model;
+    } catch {}
+}
 ---
 
 <header class="header-wrapper">
@@ -17,9 +30,20 @@
         </nav>
 
         {/* Connexion à droite */}
-        <div class="header-auth">
-            <a href="/login" class="auth-link">Connexion -</a>
-        </div>
+        {
+            user ? (
+                <>
+                    <span>👤 {user.name ?? user.email}</span>
+                    <a class="nav-link" href="/logout">
+                        Déconnexion
+                    </a>
+                </>
+            ) : (
+                <a class="nav-link" href="/login">
+                    Se connecter
+                </a>
+            )
+        }
     </div>
 </header>
 

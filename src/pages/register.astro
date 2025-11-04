@@ -1,116 +1,244 @@
 ---
 import Header from "../components/header.astro";
 import "../styles/global.css";
-// Pas d’import { pb } ici.
 ---
 
 <Header />
 
 <html lang="fr">
-<head>
-    <title>Créer un compte</title>
-    <meta name="viewport" content="width=device-width" />
-    <meta charset="UTF-8" />
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.8.0/dist/full.css" rel="stylesheet" type="text/css"/>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10">
-    <div class="card w-full max-w-md shadow-2xl bg-base-100">
-        <div class="card-body">
-            <div class="flex justify-center mb-4">
-                <div class="avatar placeholder">
-                    <div class="bg-primary text-primary-content w-16 rounded-full">
-                        <span class="text-2xl">👓</span>
-                    </div>
-                </div>
+    <head>
+        <title>Inscription</title>
+        <meta name="viewport" content="width=device-width" />
+        <meta charset="UTF-8" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <main>
+            <div class="auth-bgword">INSCRIPTION</div>
+            <div class="auth-tabs">
+                <a href="/login" class="tab">Connexion</a>
+                <a href="/register" class="tab active">Inscription</a>
             </div>
-
-            <h1 class="card-title text-3xl mb-2 justify-center">Créer un compte</h1>
-            <form id="register-form" class="flex flex-col gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Nom</span>
-                    </label>
-                    <input type="text" name="name" placeholder="Votre nom" class="input input-bordered"/>
+            <form class="auth-box" id="register-form">
+                <label>
+                    <span>EMAIL</span>
+                    <div class="input-icon">
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="votre@email.com"
+                            required
+                        />
+                    </div>
+                </label>
+                <label>
+                    <span>MOT DE PASSE</span>
+                    <div class="input-icon">
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="********"
+                            required
+                            minlength="8"
+                        />
+                    </div>
+                </label>
+                <label>
+                    <span>CONFIRMER</span>
+                    <div class="input-icon">
+                        <input
+                            type="password"
+                            name="passwordConfirm"
+                            placeholder="********"
+                            required
+                            minlength="8"
+                        />
+                    </div>
+                </label>
+                <label>
+                    <span>NOM</span>
+                    <div class="input-icon">
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Votre nom"
+                            required
+                        />
+                    </div>
+                </label>
+                <button type="submit" class="auth-btn">CRÉER LE COMPTE</button>
+                <div
+                    id="status"
+                    style="color:#d32f2f; margin-top:.9em; text-align:center; display:none"
+                >
                 </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Email</span>
-                    </label>
-                    <input type="email" name="email" placeholder="votre@email.com" required class="input input-bordered"/>
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Mot de passe</span>
-                    </label>
-                    <input type="password" name="password" placeholder="Mot de passe" minlength="8" required class="input input-bordered"/>
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Confirmer le mot de passe</span>
-                    </label>
-                    <input type="password" name="passwordConfirm" placeholder="Confirmation" minlength="8" required class="input input-bordered"/>
-                </div>
-                <button type="submit" class="btn btn-primary w-full mt-2" id="submit-btn">
-                    <span id="submit-text">Créer mon compte</span>
-                    <span class="loading loading-spinner loading-sm hidden" id="loading"></span>
-                </button>
             </form>
+        </main>
+        <script type="module">
+            const form = document.getElementById("register-form");
+            const status = document.getElementById("status");
 
-            <div id="status" class="mt-4 text-center hidden"></div>
-            <div class="divider">OU</div>
-            <p class="text-center text-sm">
-                Vous avez déjà un compte ? 
-                <a href="/login" class="link link-primary font-semibold">Se connecter</a>
-            </p>
-        </div>
-    </div>
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                status.style.display = "none";
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                const passwordConfirm = e.target.passwordConfirm.value;
+                const name = e.target.name.value;
+                
+                if (!name || name.trim().length < 2) {
+                    status.textContent = "❌ Le nom est obligatoire";
+                    status.style.display = "block";
+                    return;
+                }
 
-    <script type="module">
-        import { pb } from '../lib/pb.js';
-        const form = document.getElementById("register-form");
-        const status = document.getElementById("status");
-        const submitBtn = document.getElementById("submit-btn");
-        const submitText = document.getElementById("submit-text");
-        const loading = document.getElementById("loading");
-
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const password = formData.get("password");
-            const passwordConfirm = formData.get("passwordConfirm");
-            if (password !== passwordConfirm) {
-                showStatus("❌ Les mots de passe ne correspondent pas", "error");
-                return;
+                if (password !== passwordConfirm) {
+                    status.textContent =
+                        "❌ Les mots de passe ne correspondent pas";
+                    status.style.display = "block";
+                    return;
+                }
+                if (password.length < 8) {
+                    status.textContent = "❌ Mot de passe trop court";
+                    status.style.display = "block";
+                    return;
+                }
+                try {
+                    const res = await fetch("/api/register", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            email,
+                            password,
+                            passwordConfirm,
+                            name,
+                        }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        status.style.color = "#388e3c";
+                        status.textContent = "✅ Compte créé avec succès !";
+                        status.style.display = "block";
+                        setTimeout(() => (window.location.href = "/"), 1200);
+                    } else {
+                        status.style.color = "#d32f2f";
+                        status.textContent =
+                            "❌ " +
+                            (data.error || "Erreur lors de l'inscription");
+                        status.style.display = "block";
+                    }
+                } catch (e) {
+                    status.textContent = "❌ Erreur serveur";
+                    status.style.display = "block";
+                }
+            };
+        </script>
+        <style>
+            /* Même css que login */
+            body {
+                font-family: "Plus Jakarta Sans", sans-serif;
+                background: #fff;
+                color: #232537;
             }
-
-            submitBtn.disabled = true;
-            submitText.classList.add("hidden");
-            loading.classList.remove("hidden");
-            status.classList.add("hidden");
-
-            try {
-                await pb.collection('users').create({
-                    name: formData.get("name"),
-                    email: formData.get("email"),
-                    password: password
-                });
-                showStatus("✅ Compte créé avec succès !", "success");
-                setTimeout(() => { window.location.href = "/"; }, 1200);
-            } catch (err) {
-                showStatus("❌ " + (err?.message || "Erreur lors de l'inscription!"), "error");
-            } finally {
-                submitBtn.disabled = false;
-                submitText.classList.remove("hidden");
-                loading.classList.add("hidden");
+            main {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
             }
-        });
-
-        function showStatus(message, type) {
-            status.textContent = message;
-            status.className = `mt-4 text-center alert ${type === "error" ? "alert-error" : "alert-success"}`;
-            status.classList.remove("hidden");
-        }
-    </script>
-</body>
+            .auth-bgword {
+                font-size: 6rem;
+                font-weight: 900;
+                color: #c9dbfd;
+                opacity: 0.55;
+                letter-spacing: 0.04em;
+                margin: 2rem 0 2.6rem 0;
+            }
+            .auth-tabs {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 1.6rem;
+            }
+            .tab {
+                border: 1.6px solid #2563eb;
+                border-right: none;
+                color: #232537;
+                font-size: 1rem;
+                font-weight: 600;
+                text-decoration: none;
+                width: 180px;
+                text-align: center;
+                padding: 0.7rem 0 0.7rem 0;
+            }
+            .tab:last-child {
+                border-right: 1.6px solid #2563eb;
+            }
+            .tab.active {
+                background: #f6f7f9;
+                color: #2563eb;
+            }
+            .auth-box {
+                background: #fff;
+                border: 1.6px solid #2563eb;
+                border-radius: 8px;
+                box-shadow: 0 8px 30px 0 #2563eb14;
+                width: 380px;
+                max-width: 95vw;
+                padding: 2rem 2rem 1.4rem 2rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1.1rem;
+            }
+            label span {
+                font-weight: 700;
+                font-size: 0.89rem;
+                color: #232537;
+                margin-bottom: 0.12em;
+                display: inline-block;
+            }
+            .input-icon {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                margin-bottom: 0.4rem;
+            }
+            input {
+                font-family: inherit;
+                font-size: 1rem;
+                border: 2px solid #232537;
+                background: #fff;
+                padding: 0.8rem 1rem;
+                border-radius: 5px;
+                width: 100%;
+            }
+            input:focus {
+                outline: none;
+                border-color: #2563eb;
+            }
+            .auth-btn {
+                background: #232537;
+                color: #fff;
+                font-weight: 700;
+                padding: 1rem 0;
+                border: none;
+                font-size: 1.08rem;
+                border-radius: 0.4rem;
+                margin-top: 1.3rem;
+                letter-spacing: 0.045em;
+                cursor: pointer;
+            }
+            @media (max-width: 600px) {
+                .auth-bgword {
+                    font-size: 3.1rem;
+                }
+                .auth-box {
+                    padding: 1.1rem;
+                }
+            }
+        </style>
+    </body>
 </html>
