@@ -15,13 +15,13 @@
     "astro": "^5.15.3",
     "esbuild": "^0.25.12",
     "fontace": "^0.3.1",
-    "pocketbase": "^0.26.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailwind": "^4.0.0"
+    "tailwind": "^2.3.1"
   },
   "devDependencies": {
     "@astrojs/tailwind": "^6.0.2",
+    "pocketbase": "^0.26.3",
     "tailwindcss": "^3.4.18"
   }
 }
