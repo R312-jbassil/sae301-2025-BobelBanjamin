@@ -5,7 +5,7 @@ export const POST = async ({ request, cookies }) => {
         const data = await request.json();
         const { email, password, passwordConfirm, name } = data;
 
-        // Vérifs de base
+        // Vérifications obligatoires
         if (!email || !password) {
             return new Response(JSON.stringify({
                 success: false,
@@ -52,6 +52,7 @@ export const POST = async ({ request, cookies }) => {
             emailVisibility: true,
         };
 
+        // Créer l'utilisateur
         await pb.collection("users").create(userData);
 
         // Auth auto juste après inscription

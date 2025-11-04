@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "@astrojs/node": "^9.5.0",
+    "@astrojs/react": "^4.4.1",
     "@tailwindcss/vite": "^4.1.16",
     "astro": "^5.15.3",
     "esbuild": "^0.25.12",
     "fontace": "^0.3.1",
     "pocketbase": "^0.26.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "tailwind": "^4.0.0"
   },
   "devDependencies": {

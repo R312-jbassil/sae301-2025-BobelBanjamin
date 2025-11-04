@@ -5,4 +5,9 @@ const pb = new PocketBase(import.meta.env.PUBLIC_POCKETBASE_URL || 'http://127.0
 // Désactiver l'auto-cancellation pour éviter les conflits entre requêtes
 pb.autoCancellation(false);
 
-export default pb;
+const lunettes = await pb.collection('lunette').getFullList({ sort: '-created' }); // ou 'created' pour la plus ancienne
+
+// Prends la première pour la paire de base
+const paireDeBase = lunettes[0];
+
+export default { pb, paireDeBase };
