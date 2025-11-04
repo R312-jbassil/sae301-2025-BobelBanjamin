@@ -10,8 +10,15 @@
   },
   "dependencies": {
     "@astrojs/node": "^9.5.0",
+    "@tailwindcss/vite": "^4.1.16",
     "astro": "^5.15.3",
     "esbuild": "^0.25.12",
-    "pocketbase": "^0.26.3"
+    "fontace": "^0.3.1",
+    "pocketbase": "^0.26.3",
+    "tailwind": "^4.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/tailwind": "^6.0.2",
+    "tailwindcss": "^3.4.18"
   }
 }

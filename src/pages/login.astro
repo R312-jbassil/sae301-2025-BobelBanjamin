@@ -1,0 +1,202 @@
+---
+import Header from "../components/header.astro";
+import "../styles/global.css";
+---
+
+<Header />
+
+<html lang="fr">
+    <head>
+        <title>Connexion</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <main>
+            <div class="auth-bgword">CONNEXION</div>
+            <div class="auth-tabs">
+                <a href="/login" class="tab active">Connexion</a>
+                <a href="/register" class="tab">Inscription</a>
+            </div>
+            <form class="auth-box" id="login-form">
+                <label>
+                    <span>EMAIL</span>
+                    <div class="input-icon">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            style="vertical-align:middle"
+                        >
+                            <rect width="20" height="20" fill="none"
+                            ></rect><path
+                                d="M4 4h12v12H4z"
+                                stroke="#2563eb"
+                                fill="none"></path><path
+                                d="M4 4l8 6 8-6"
+                                stroke="#2563eb"
+                                fill="none"></path>
+                        </svg>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="votre@email.com"
+                            required
+                        />
+                    </div>
+                </label>
+                <label>
+                    <span>MOT DE PASSE</span>
+                    <div class="input-icon">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            style="vertical-align:middle"
+                        >
+                            <circle
+                                cx="10"
+                                cy="10"
+                                r="8"
+                                stroke="#2563eb"
+                                fill="none"></circle>
+                        </svg>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="********"
+                            required
+                        />
+                    </div>
+                </label>
+                <button type="submit" class="auth-btn">SE CONNECTER</button>
+            </form>
+        </main>
+        <script type="module">
+            import { pb } from "../lib/pb.js";
+            document.getElementById("login-form").onsubmit = async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                try {
+                    await pb
+                        .collection("users")
+                        .authWithPassword(email, password);
+                    window.location.href = "/";
+                } catch (err) {
+                    alert("Erreur login : " + err.message);
+                }
+            };
+        </script>
+        <style>
+            body {
+                font-family: "Plus Jakarta Sans", sans-serif;
+                background: #fff;
+                color: #232537;
+            }
+            main {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+            }
+            .auth-bgword {
+                font-size: 6rem;
+                font-weight: 900;
+                color: #c9dbfd;
+                opacity: 0.55;
+                letter-spacing: 0.04em;
+                margin: 2rem 0 2.6rem 0;
+            }
+            .auth-tabs {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 1.6rem;
+            }
+            .tab {
+                border: 1.6px solid #2563eb;
+                border-right: none;
+                color: #232537;
+                font-size: 1rem;
+                font-weight: 600;
+                text-decoration: none;
+                width: 180px;
+                text-align: center;
+                padding: 0.7rem 0 0.7rem 0;
+            }
+            .tab:last-child {
+                border-right: 1.6px solid #2563eb;
+            }
+            .tab.active {
+                background: #f6f7f9;
+                color: #2563eb;
+            }
+            .auth-box {
+                background: #fff;
+                border: 1.6px solid #2563eb;
+                border-radius: 8px;
+                box-shadow: 0 8px 30px 0 #2563eb14;
+                width: 360px;
+                max-width: 90vw;
+                padding: 2rem 2rem 1.4rem 2rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1.1rem;
+            }
+            label span {
+                font-weight: 700;
+                font-size: 0.89rem;
+                color: #232537;
+                margin-bottom: 0.12em;
+                display: inline-block;
+            }
+            .input-icon {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                margin-bottom: 0.4rem;
+            }
+            input {
+                font-family: inherit;
+                font-size: 1rem;
+                border: 2px solid #232537;
+                background: #fff;
+                padding: 0.8rem 1rem;
+                border-radius: 5px;
+                width: 100%;
+            }
+            input:focus {
+                outline: none;
+                border-color: #2563eb;
+            }
+            .auth-btn {
+                background: #232537;
+                color: #fff;
+                font-weight: 700;
+                padding: 1rem 0;
+                border: none;
+                font-size: 1rem;
+                border-radius: 0.4rem;
+                margin-top: 1.3rem;
+                letter-spacing: 0.045em;
+                cursor: pointer;
+            }
+            .auth-under {
+                text-align: center;
+                margin-top: 0.8rem;
+                font-size: 0.85rem;
+            }
+            .auth-under a {
+                color: #2563eb;
+            }
+            @media (max-width: 600px) {
+                .auth-bgword {
+                    font-size: 3.1rem;
+                }
+            }
+        </style>
+    </body>
+</html>

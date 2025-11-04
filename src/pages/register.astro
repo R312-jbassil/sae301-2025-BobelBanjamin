@@ -1,0 +1,116 @@
+---
+import Header from "../components/header.astro";
+import "../styles/global.css";
+// Pas d’import { pb } ici.
+---
+
+<Header />
+
+<html lang="fr">
+<head>
+    <title>Créer un compte</title>
+    <meta name="viewport" content="width=device-width" />
+    <meta charset="UTF-8" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.8.0/dist/full.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10">
+    <div class="card w-full max-w-md shadow-2xl bg-base-100">
+        <div class="card-body">
+            <div class="flex justify-center mb-4">
+                <div class="avatar placeholder">
+                    <div class="bg-primary text-primary-content w-16 rounded-full">
+                        <span class="text-2xl">👓</span>
+                    </div>
+                </div>
+            </div>
+
+            <h1 class="card-title text-3xl mb-2 justify-center">Créer un compte</h1>
+            <form id="register-form" class="flex flex-col gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Nom</span>
+                    </label>
+                    <input type="text" name="name" placeholder="Votre nom" class="input input-bordered"/>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Email</span>
+                    </label>
+                    <input type="email" name="email" placeholder="votre@email.com" required class="input input-bordered"/>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Mot de passe</span>
+                    </label>
+                    <input type="password" name="password" placeholder="Mot de passe" minlength="8" required class="input input-bordered"/>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Confirmer le mot de passe</span>
+                    </label>
+                    <input type="password" name="passwordConfirm" placeholder="Confirmation" minlength="8" required class="input input-bordered"/>
+                </div>
+                <button type="submit" class="btn btn-primary w-full mt-2" id="submit-btn">
+                    <span id="submit-text">Créer mon compte</span>
+                    <span class="loading loading-spinner loading-sm hidden" id="loading"></span>
+                </button>
+            </form>
+
+            <div id="status" class="mt-4 text-center hidden"></div>
+            <div class="divider">OU</div>
+            <p class="text-center text-sm">
+                Vous avez déjà un compte ? 
+                <a href="/login" class="link link-primary font-semibold">Se connecter</a>
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pb } from '../lib/pb.js';
+        const form = document.getElementById("register-form");
+        const status = document.getElementById("status");
+        const submitBtn = document.getElementById("submit-btn");
+        const submitText = document.getElementById("submit-text");
+        const loading = document.getElementById("loading");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const password = formData.get("password");
+            const passwordConfirm = formData.get("passwordConfirm");
+            if (password !== passwordConfirm) {
+                showStatus("❌ Les mots de passe ne correspondent pas", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitText.classList.add("hidden");
+            loading.classList.remove("hidden");
+            status.classList.add("hidden");
+
+            try {
+                await pb.collection('users').create({
+                    name: formData.get("name"),
+                    email: formData.get("email"),
+                    password: password
+                });
+                showStatus("✅ Compte créé avec succès !", "success");
+                setTimeout(() => { window.location.href = "/"; }, 1200);
+            } catch (err) {
+                showStatus("❌ " + (err?.message || "Erreur lors de l'inscription!"), "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitText.classList.remove("hidden");
+                loading.classList.add("hidden");
+            }
+        });
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `mt-4 text-center alert ${type === "error" ? "alert-error" : "alert-success"}`;
+            status.classList.remove("hidden");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+---
+
+---
+
+<header class="header-wrapper">
+    <div class="header-container">
+        {/* Logo cercle bleu - CLIQUABLE */}
+        <a href="/" class="header-logo">
+            <div class="logo-circle"></div>
+        </a>
+
+        {/* Navigation centrale */}
+        <nav class="header-nav">
+            <a href="/collection" class="nav-link">Collection</a>
+            <a href="/personnalisation" class="nav-link">Personnalisation</a>
+            <a href="/a-propos" class="nav-link">A propos</a>
+        </nav>
+
+        {/* Connexion à droite */}
+        <div class="header-auth">
+            <a href="/login" class="auth-link">Connexion -</a>
+        </div>
+    </div>
+</header>
+
+<style>
+    .header-container {
+        width: 100%;
+        background: white;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        padding: 1.25rem 3rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        gap: 3rem;
+    }
+
+    .header-logo {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .logo-circle {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        border: 3px solid #1e40af;
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+        mask: radial-gradient(circle, transparent 40%, black 60%);
+        -webkit-mask: radial-gradient(circle, transparent 40%, black 60%);
+    }
+
+    .header-nav {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+    }
+
+    .nav-link {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        color: #1a1a1a;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: color 0.3s ease;
+    }
+
+    .nav-link:hover {
+        color: #1e40af;
+    }
+
+    .header-auth {
+        display: flex;
+        align-items: center;
+    }
+
+    .auth-link {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: #1e40af;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: opacity 0.3s ease;
+    }
+
+    .auth-link:hover {
+        opacity: 0.8;
+    }
+
+    @media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .header-nav {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .nav-link {
+            font-size: 0.75rem;
+        }
+
+        .auth-link {
+            font-size: 0.75rem;
+        }
+    }
+</style>
