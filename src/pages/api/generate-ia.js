@@ -2,6 +2,17 @@ export async function POST({ request }) {
     try {
         const { prompt, materiaux, verres } = await request.json();
 
+        // Détection automatique de l'URL du site
+        const host = request.headers.get('host') || 'localhost:4321';
+        const protocol = host.includes('localhost') || host.includes('127.0.0.1') 
+            ? 'http' 
+            : 'https';
+        const siteUrl = import.meta.env.SITE || 
+                       import.meta.env.PUBLIC_PRODUCTION_URL || 
+                       `${protocol}://${host}`;
+
+        console.log('🌐 Site URL détectée:', siteUrl);
+
         // Créer le prompt pour l'IA
         const systemPrompt = `Tu es un designer de lunettes expert. Ton rôle est d'analyser la description d'un client et de choisir les meilleures options pour créer des lunettes personnalisées.
 
@@ -34,7 +45,7 @@ Choisis les meilleures options et réponds avec le JSON.`;
             headers: {
                 'Authorization': `Bearer ${import.meta.env.OPENROUTER_API_KEY || 'sk-or-v1-your-key-here'}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': import.meta.env.SITE || 'http://localhost:4321',
+                'HTTP-Referer': siteUrl,
                 'X-Title': 'TaVue - Générateur de Lunettes IA'
             },
             body: JSON.stringify({
