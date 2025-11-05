@@ -1,15 +1,15 @@
 ---
 import Header from "../components/header.astro";
 import "../styles/global.css";
+const success = Astro.url.searchParams.get("success") === "true";
 ---
 
 <Header />
 
 <html lang="fr">
     <head>
-        <title>Inscription</title>
-        <meta name="viewport" content="width=device-width" />
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link
             href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap"
             rel="stylesheet"
@@ -88,7 +88,7 @@ import "../styles/global.css";
                 const password = e.target.password.value;
                 const passwordConfirm = e.target.passwordConfirm.value;
                 const name = e.target.name.value;
-                
+
                 if (!name || name.trim().length < 2) {
                     status.textContent = "❌ Le nom est obligatoire";
                     status.style.display = "block";
