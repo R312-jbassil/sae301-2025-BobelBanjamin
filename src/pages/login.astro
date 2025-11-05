@@ -46,12 +46,46 @@ import "../styles/global.css";
                     </div>
                 </label>
                 <button type="submit" class="auth-btn">SE CONNECTER</button>
+
                 <div
                     id="login-error"
                     style="color:#d32f2f; margin-top:.9em; text-align:center; display:none"
                 >
                 </div>
             </form>
+            <button id="googlelogin" type="button" class="google-btn">
+                <svg
+                    viewBox="0 0 48 48"
+                    width="22"
+                    style="margin-right:9px;vertical-align:middle"
+                >
+                    <g>
+                        <path
+                            fill="#4285F4"
+                            d="M44.5,20H24v8.5h11.7C34.4,33.1,29.4,36,24,36c-6.6,0-12-5.4-12-12s5.4-12,12-12   c3.1,0,6,1.2,8.2,3.2l6.1-5.8C34.4,6.1,29.5,4,24,4C12.9,4,4,12.9,4,24c0,11.1,8.9,20,20,20c10.3,0,19.1-7.5,19.9-17H24V20H44.5z"
+                        ></path>
+                        <path
+                            fill="#34A853"
+                            d="M6.3,14.1l7.1,5.2C15.8,16.2,19.6,14,24,14c3.1,0,6,1.2,8.2,3.2l6.1-5.8C34.4,6.1,29.5,4,24,4   C15.3,4,7.8,9.9,6.3,14.1z"
+                        ></path>
+                        <path
+                            fill="#FBBC05"
+                            d="M24,44c5.1,0,9.8-1.7,13.3-4.7l-6.2-5.1C28.8,35,26.5,36,24,36c-5.4,0-10.3-2.9-12.9-7.2l-7.1,5.4   C7.8,38.1,15.3,44,24,44z"
+                        ></path>
+                        <path
+                            fill="#EA4335"
+                            d="M44.5,20H24v8.5h11.7c-1.7,4.1-5.7,7.8-11.7,7.8c-6.6,0-12-5.4-12-12c0-2.1,0.5-4,1.4-5.7l-7.1-5.6   C8.2,10.4,15.3,4,24,4c5.5,0,10.4,2.1,14,5.6l-6.1,5.8C30,15.2,27.1,14,24,14c-4.3,0-8.2,2.2-10.5,5.8L24,28V20H44.5z"
+                        ></path>
+                        <path fill="none" d="M0,0h48v48H0V0z"></path>
+                    </g>
+                </svg>
+                Se connecter avec Google
+            </button>
+            <div
+                id="msg"
+                style="color:#d32f2f;text-align:center;margin-top:.8em"
+            >
+            </div>
         </main>
         <script type="module">
             const form = document.getElementById("login-form");
@@ -80,6 +114,24 @@ import "../styles/global.css";
                 } catch (err) {
                     errorBox.textContent = "❌ Erreur serveur";
                     errorBox.style.display = "block";
+                }
+            };
+
+            import PocketBase from "https://cdn.jsdelivr.net/npm/pocketbase@0.18.2/dist/pocketbase.es.mjs";
+            // Mets ton URL API PocketBase ici
+            const pb = new PocketBase("http://127.0.0.1:8090");
+
+            const googlelogin = document.getElementById("googlelogin");
+            googlelogin.onclick = async () => {
+                try {
+                    await pb
+                        .collection("users")
+                        .authWithOAuth2({ provider: "google" });
+                    location.href = "/sae301";
+                } catch (err) {
+                    document.getElementById("msg").textContent =
+                        "Échec de connexion Google";
+                    console.error(err);
                 }
             };
         </script>
@@ -184,6 +236,31 @@ import "../styles/global.css";
                 .auth-box {
                     padding: 1.1rem;
                 }
+            }
+
+            .google-btn {
+                margin-top: 0.8em;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.65em;
+                border: 2px solid #e0e8fb;
+                background: #f8fafc;
+                color: #222d42;
+                border-radius: 4px;
+                font-weight: 600;
+                font-size: 1.06rem;
+                letter-spacing: 0.03em;
+                transition:
+                    box-shadow 0.19s,
+                    border-color 0.19s;
+                cursor: pointer;
+                box-shadow: 0 2px 10px #497ef109;
+            }
+            .google-btn:hover {
+                border-color: #4285f4;
+                background: #e8f0fe;
             }
         </style>
     </body>
