@@ -192,23 +192,16 @@ try {
                                             />
                                         )}
                                     </div>
+                                    <div class="lunette-prix">
+                                        {(lunette.total || 0).toFixed(2)} €
+                                    </div>
                                 </div>
                             </a>
                             <button
                                 class="add-to-cart-btn"
                                 data-lunette-id={lunette.id}
                                 data-lunette-nom={lunette.nom_modele}
-                                data-lunette-prix={
-                                    lunette.expand?.materiaux_lunettes &&
-                                    lunette.expand?.id_verres
-                                        ? (
-                                              lunette.expand.materiaux_lunettes
-                                                  .prix_materiaux +
-                                              lunette.expand.id_verres
-                                                  .prix_verres
-                                          ).toFixed(2)
-                                        : 0
-                                }
+                                data-lunette-prix={lunette.total || 0}
                             >
                                 <svg
                                     width="18"
@@ -351,6 +344,7 @@ try {
         .color-swatches {
             display: flex;
             gap: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
         .color-swatch {
@@ -365,6 +359,13 @@ try {
         .color-swatch:hover {
             transform: scale(1.15);
             border-color: #4a6bff;
+        }
+
+        .lunette-prix {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4a6bff;
+            margin-top: auto;
         }
 
         .add-to-cart-btn {
@@ -411,7 +412,7 @@ try {
     <script>
         // Gérer l'ajout au panier
         document.querySelectorAll(".add-to-cart-btn").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -419,36 +420,52 @@ try {
                 const lunetteNom = btn.dataset.lunetteNom;
                 const lunettePrix = parseFloat(btn.dataset.lunettePrix);
 
-                // Récupérer le panier actuel
-                const panier = JSON.parse(
-                    localStorage.getItem("panier") || "[]",
-                );
+                // Désactiver le bouton pendant l'ajout
+                btn.disabled = true;
+                btn.textContent = "Ajout...";
 
-                // Vérifier si la lunette est déjà dans le panier
-                const existeDeja = panier.some((item) => item.id === lunetteId);
+                try {
+                    // Ajouter au panier via l'API
+                    const response = await fetch("/api/panier", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            id_lunette: lunetteId,
+                            nom: lunetteNom,
+                            prix: lunettePrix,
+                        }),
+                    });
 
-                if (existeDeja) {
-                    alert(
-                        "Cette paire de lunettes est déjà dans votre panier !",
-                    );
-                    return;
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Notification de succès
+                        showNotification("✓ Ajouté au panier !");
+
+                        // Dispatcher un événement pour mettre à jour le badge
+                        window.dispatchEvent(new Event("panier-updated"));
+                    } else {
+                        alert(
+                            result.error || "Erreur lors de l'ajout au panier",
+                        );
+                    }
+                } catch (error) {
+                    console.error("Erreur:", error);
+                    alert("Erreur lors de l'ajout au panier");
+                } finally {
+                    // Réactiver le bouton
+                    btn.disabled = false;
+                    btn.innerHTML = `
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        Ajouter au panier
+                    `;
                 }
-
-                // Ajouter au panier
-                panier.push({
-                    id: lunetteId,
-                    nom: lunetteNom,
-                    prix: lunettePrix,
-                    quantite: 1,
-                });
-
-                localStorage.setItem("panier", JSON.stringify(panier));
-
-                // Notification de succès
-                showNotification("✓ Ajouté au panier !");
-
-                // Dispatcher un événement pour mettre à jour le badge
-                window.dispatchEvent(new Event("panier-updated"));
             });
         });
 

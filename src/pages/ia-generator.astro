@@ -1,0 +1,719 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PocketBase from "pocketbase";
+
+// Vérifier si l'utilisateur est connecté
+let isAuthenticated = false;
+let userId = null;
+const authCookie = Astro.cookies.get("pb_auth");
+
+if (authCookie && authCookie.value) {
+    try {
+        const pbAuth = new PocketBase("http://127.0.0.1:8090");
+        pbAuth.authStore.loadFromCookie(authCookie.value);
+        isAuthenticated = pbAuth.authStore.isValid && !!pbAuth.authStore.model;
+        userId = pbAuth.authStore.model?.id;
+    } catch (e) {
+        isAuthenticated = false;
+    }
+}
+
+// Charger les matériaux et verres disponibles
+const pb = new PocketBase("http://127.0.0.1:8090");
+const materiaux = await pb.collection("materiaux_lunette").getFullList();
+const verres = await pb.collection("materiaux_verres").getFullList();
+---
+
+<Layout title="Générateur IA de Lunettes">
+    <main class="ia-container">
+        <h1 class="page-title">GÉNÉRATEUR IA</h1>
+
+        <div class="content-grid">
+            <!-- Section de description -->
+            <div class="description-section">
+                <div class="card">
+                    <h2>🤖 Décrivez vos lunettes idéales</h2>
+                    <p class="subtitle">
+                        Décrivez ce que vous recherchez et l'IA vous proposera
+                        une combinaison parfaite
+                    </p>
+
+                    <textarea
+                        id="user-prompt"
+                        placeholder="Ex: Je veux des lunettes de soleil élégantes et modernes, avec des verres sombres et une monture légère en bois..."
+                        rows="5"></textarea>
+
+                    <button id="generate-btn" class="generate-btn">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                            ></path>
+                        </svg>
+                        Générer avec l'IA
+                    </button>
+
+                    <div id="loading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>L'IA analyse votre demande...</p>
+                    </div>
+                </div>
+
+                <div
+                    id="result-card"
+                    class="card result-card"
+                    style="display: none;"
+                >
+                    <h3>✨ Suggestion de l'IA</h3>
+                    <div id="ia-explanation" class="ia-explanation"></div>
+                </div>
+            </div>
+
+            <!-- Section de prévisualisation -->
+            <div class="preview-section">
+                <div class="card preview-card">
+                    <h2>Aperçu</h2>
+                    <div class="svg-preview" id="svg-preview">
+                        <p class="placeholder-text">
+                            Utilisez le générateur IA pour voir un aperçu
+                        </p>
+                    </div>
+
+                    <div id="specs" class="specs" style="display: none;">
+                        <h3>Caractéristiques</h3>
+                        <div class="specs-grid">
+                            <div class="spec-item">
+                                <span class="spec-label">Matériau:</span>
+                                <span id="spec-materiau">-</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Verres:</span>
+                                <span id="spec-verres">-</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Taille:</span>
+                                <span id="spec-taille">-</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Prix:</span>
+                                <span id="spec-prix" class="price">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {
+                        isAuthenticated ? (
+                            <button
+                                id="save-btn"
+                                class="save-btn"
+                                style="display: none;"
+                            >
+                                <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                    <polyline points="17 21 17 13 7 13 7 21" />
+                                    <polyline points="7 3 7 8 15 8" />
+                                </svg>
+                                Enregistrer cette création
+                            </button>
+                        ) : (
+                            <div class="auth-notice">
+                                <p>
+                                    Connectez-vous pour enregistrer vos
+                                    créations
+                                </p>
+                                <a href="/login" class="login-link">
+                                    Se connecter
+                                </a>
+                            </div>
+                        )
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script define:vars={{ materiaux, verres, isAuthenticated }}>
+        let currentGeneration = null;
+
+        // Fonction de génération IA avec OpenRouter
+        async function generateWithIA(prompt) {
+            const loading = document.getElementById("loading");
+            loading.style.display = "block";
+
+            try {
+                // Appel à l'API de génération
+                const response = await fetch("/api/generate-ia", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        materiaux: materiaux,
+                        verres: verres,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Erreur lors de la génération");
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || "Erreur inconnue");
+                }
+
+                loading.style.display = "none";
+                return data.generation;
+            } catch (error) {
+                console.error("Erreur:", error);
+                loading.style.display = "none";
+                throw error;
+            }
+        }
+
+        // Fonction de génération IA de secours (fallback si API key manquante)
+        async function generateWithIAFallback(prompt) {
+            // Simuler un délai de réflexion
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+
+            // Analyse simple du texte pour choisir les options
+            const promptLower = prompt.toLowerCase();
+
+            // Choix du matériau
+            let materiau = materiaux[0];
+            if (
+                promptLower.includes("bois") ||
+                promptLower.includes("naturel")
+            ) {
+                materiau =
+                    materiaux.find((m) => m.nom_materiaux.includes("bois")) ||
+                    materiaux[0];
+            } else if (
+                promptLower.includes("métal") ||
+                promptLower.includes("metal")
+            ) {
+                materiau =
+                    materiaux.find((m) => m.nom_materiaux.includes("métal")) ||
+                    materiaux[0];
+            } else if (
+                promptLower.includes("plastique") ||
+                promptLower.includes("léger")
+            ) {
+                materiau =
+                    materiaux.find((m) =>
+                        m.nom_materiaux.includes("plastique"),
+                    ) || materiaux[0];
+            }
+
+            // Choix des verres
+            let verre = verres[0];
+            if (
+                promptLower.includes("soleil") ||
+                promptLower.includes("sombre")
+            ) {
+                verre =
+                    verres.find((v) => v.nom_verres.includes("solaire")) ||
+                    verres[0];
+            } else if (promptLower.includes("lumière bleue")) {
+                verre =
+                    verres.find((v) => v.nom_verres.includes("lumiere_bleu")) ||
+                    verres[0];
+            } else if (
+                promptLower.includes("transparent") ||
+                promptLower.includes("clair")
+            ) {
+                verre =
+                    verres.find((v) => v.nom_verres.includes("transparant")) ||
+                    verres[0];
+            }
+
+            // Choix de la taille
+            let taille = "M";
+            if (promptLower.includes("petit") || promptLower.includes("fin")) {
+                taille = "S";
+            } else if (
+                promptLower.includes("grand") ||
+                promptLower.includes("large")
+            ) {
+                taille = "L";
+            }
+
+            // Choix des couleurs
+            let couleur_monture = "#222d3a";
+            let couleur_branche = "#222d3a";
+            let couleur_verres = "#7fa1e7";
+
+            if (
+                promptLower.includes("noir") ||
+                promptLower.includes("sombre")
+            ) {
+                couleur_monture = "#222d3a";
+                couleur_branche = "#222d3a";
+            } else if (
+                promptLower.includes("marron") ||
+                promptLower.includes("brun")
+            ) {
+                couleur_monture = "#8b4513";
+                couleur_branche = "#8b4513";
+            } else if (promptLower.includes("bleu")) {
+                couleur_monture = "#4a6bff";
+                couleur_branche = "#4a6bff";
+            } else if (
+                promptLower.includes("rouge") ||
+                promptLower.includes("rose")
+            ) {
+                couleur_monture = "#e74c3c";
+                couleur_branche = "#e74c3c";
+            }
+
+            if (
+                promptLower.includes("verres bleus") ||
+                promptLower.includes("lentilles bleues")
+            ) {
+                couleur_verres = "#4a90e2";
+            } else if (
+                promptLower.includes("verres noirs") ||
+                promptLower.includes("verres sombres")
+            ) {
+                couleur_verres = "#2c3e50";
+            }
+
+            // Générer une explication
+            const explanation = `Basé sur votre description, j'ai créé une paire de lunettes avec une monture en ${materiau.nom_materiaux}, des verres ${verre.nom_verres}, taille ${taille}. Les couleurs ont été choisies pour correspondre à votre style ${
+                promptLower.includes("élégant") ? "élégant" : "moderne"
+            }.`;
+
+            loading.style.display = "none";
+
+            return {
+                materiau,
+                verre,
+                taille,
+                couleur_monture,
+                couleur_branche,
+                couleur_verres,
+                explanation,
+            };
+        }
+
+        // Fonction pour afficher le SVG
+        function displaySVG(generation) {
+            const preview = document.getElementById("svg-preview");
+            preview.innerHTML = `
+                <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 500px;">
+                    <!-- Branches -->
+                    <g id="branches">
+                        <path fill="${generation.couleur_branche}" d="M78.87,100.84c-5.21-.13-13.13.15-20.95,2.38-12.67,3.61-39.63,13.23-39.63,13.23l2.64,6.69s29.57-12.64,39.31-15.58c6.01-1.81,12.53-2.11,17.79-2.02" />
+                        <path fill="${generation.couleur_branche}" d="M420.89,100.84c5.21-.13,13.13.15,20.95,2.38,12.67,3.61,39.63,13.23,39.63,13.23l-2.64,6.69s-29.57-12.64-39.31-15.58c-6.01-1.81-12.53-2.11-17.79-2.02" />
+                    </g>
+                    
+                    <!-- Monture -->
+                    <g id="monture">
+                        <path fill="${generation.couleur_monture}" d="M252.64,108.55c-.87,0-8.28.31-8.28.31v5.86s4.19-.31,7.06-.31c17.35,0,83.25,2.04,107.91,2.04,25.77,0,40.77-4.95,54.57-7.84,2.48-.52,5.5-1.02,7.8-1.31.73-.09,1.68-.19,2.44-.19.73,0,1.39.06,1.39.92s-.63.88-1.17.96c-4.29.62-16.46,2.81-24.75,4.79-9.85,2.35-20.68,4.54-31.94,5.77-5.08.56-19.06,1.88-26.18,2.38-5.23.37-89.14,2.07-102.11,2.07-2.04,0-3.53-.29-4.4-.29-.87,0-8.28.31-8.28.31v5.86s7.41-.31,8.28-.31,2.36.29,4.4.29c12.97,0,96.88-1.7,102.11-2.07,7.12-.5,21.1-1.82,26.18-2.38,11.26-1.23,22.09-3.42,31.94-5.77,8.29-1.98,20.46-4.17,24.75-4.79.54-.08,1.17-.1,1.17-.96s-.66-.92-1.39-.92c-.76,0-1.71.1-2.44.19-2.3.29-5.32.79-7.8,1.31-13.8,2.89-28.8,7.84-54.57,7.84-24.66,0-90.56-2.04-107.91-2.04-2.87,0-7.06.31-7.06.31v5.86s7.41-.31,8.28-.31Z"/>
+                        <path fill="${generation.couleur_monture}" d="M247.32,108.55c.87,0,8.28.31,8.28.31v5.86s-4.19-.31-7.06-.31c-17.35,0-83.25,2.04-107.91,2.04-25.77,0-40.77-4.95-54.57-7.84-2.48-.52-5.5-1.02-7.8-1.31-.73-.09-1.68-.19-2.44-.19-.73,0-1.39.06-1.39.92s.63.88,1.17.96c4.29.62,16.46,2.81,24.75,4.79,9.85,2.35,20.68,4.54,31.94,5.77,5.08.56,19.06,1.88,26.18,2.38,5.23.37,89.14,2.07,102.11,2.07,2.04,0,3.53-.29,4.4-.29.87,0,8.28.31,8.28.31v5.86s-7.41-.31-8.28-.31-2.36.29-4.4.29c-12.97,0-96.88-1.7-102.11-2.07-7.12-.5-21.1-1.82-26.18-2.38-11.26-1.23-22.09-3.42-31.94-5.77-8.29-1.98-20.46-4.17-24.75-4.79-.54-.08-1.17-.1-1.17-.96s.66-.92,1.39-.92c.76,0,1.71.1,2.44.19,2.3.29,5.32.79,7.8,1.31,13.8,2.89,28.8,7.84,54.57,7.84,24.66,0,90.56-2.04,107.91-2.04,2.87,0,7.06.31,7.06.31v5.86s-7.41-.31-8.28-.31Z"/>
+                    </g>
+                    
+                    <!-- Verres -->
+                    <g id="verres">
+                        <path fill="${generation.couleur_verres}" opacity="0.65" d="M252.68,192.54s1.09-9.55-19.57-16.69c-11.76-4.06-60.46,3.23-60.46,3.23,0,0-19.09,4.06-21.71,8.28-2.62,4.22-9.46,17.24-8.29,37.97,1.14,20.21,7.31,26.8,12.61,30.31,0,0,7.1,4.93,21.34,5.93,26.65,1.88,37.01-1.14,46.19-7.73,29.88-21.46,29.88-61.3,29.88-61.3Z"/>
+                        <path fill="${generation.couleur_verres}" opacity="0.65" d="M247.32,192.54s-1.09-9.55,19.57-16.69c11.76-4.06,60.46,3.23,60.46,3.23,0,0,19.09,4.06,21.71,8.28,2.62,4.22,9.46,17.24,8.29,37.97-1.14,20.21-7.31,26.8-12.61,30.31,0,0-7.1,4.93-21.34,5.93-26.65,1.88-37.01-1.14-46.19-7.73-29.88-21.46-29.88-61.3-29.88-61.3Z"/>
+                    </g>
+                </svg>
+            `;
+        }
+
+        // Fonction pour afficher les specs
+        function displaySpecs(generation) {
+            document.getElementById("spec-materiau").textContent =
+                generation.materiau.nom_materiaux;
+            document.getElementById("spec-verres").textContent =
+                generation.verre.nom_verres;
+            document.getElementById("spec-taille").textContent =
+                generation.taille;
+
+            const prix =
+                parseFloat(generation.materiau.prix_materiaux) +
+                parseFloat(generation.verre.prix_verres);
+            document.getElementById("spec-prix").textContent =
+                prix.toFixed(2) + " €";
+
+            document.getElementById("specs").style.display = "block";
+        }
+
+        // Event listener pour le bouton générer
+        document
+            .getElementById("generate-btn")
+            .addEventListener("click", async () => {
+                const prompt = document.getElementById("user-prompt").value;
+
+                if (!prompt.trim()) {
+                    alert("Veuillez décrire les lunettes que vous souhaitez !");
+                    return;
+                }
+
+                try {
+                    // Essayer d'abord avec l'IA réelle
+                    let generation;
+                    try {
+                        generation = await generateWithIA(prompt);
+                    } catch (apiError) {
+                        console.warn("API IA non disponible, utilisation du fallback:", apiError);
+                        // Si l'API échoue, utiliser la version de secours
+                        generation = await generateWithIAFallback(prompt);
+                    }
+                    
+                    currentGeneration = generation;
+
+                    // Afficher le résultat
+                    document.getElementById("ia-explanation").textContent =
+                        currentGeneration.explanation;
+                    document.getElementById("result-card").style.display =
+                        "block";
+
+                    // Afficher le SVG
+                    displaySVG(currentGeneration);
+                    displaySpecs(currentGeneration);
+
+                    // Afficher le bouton save
+                    const saveBtn = document.getElementById("save-btn");
+                    if (saveBtn) {
+                        saveBtn.style.display = "flex";
+                    }
+                } catch (error) {
+                    console.error("Erreur:", error);
+                    alert("Erreur lors de la génération: " + error.message);
+                    document.getElementById("loading").style.display = "none";
+                }
+            });
+
+        // Event listener pour le bouton save
+        if (isAuthenticated) {
+            document
+                .getElementById("save-btn")
+                .addEventListener("click", async () => {
+                    if (!currentGeneration) {
+                        alert("Aucune génération à enregistrer");
+                        return;
+                    }
+
+                    const nomModele = prompt(
+                        "Donnez un nom à votre création:",
+                        "Lunettes IA",
+                    );
+                    if (!nomModele) return;
+
+                    const saveBtn = document.getElementById("save-btn");
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = "Enregistrement...";
+
+                    try {
+                        const response = await fetch("/api/creer", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                nom_modele: nomModele,
+                                materiau: {
+                                    id: currentGeneration.materiau.id,
+                                    nom: currentGeneration.materiau
+                                        .nom_materiaux,
+                                    prix_materiaux:
+                                        currentGeneration.materiau
+                                            .prix_materiaux,
+                                },
+                                verre: {
+                                    id: currentGeneration.verre.id,
+                                    nom: currentGeneration.verre.nom_verres,
+                                    prix_verres:
+                                        currentGeneration.verre.prix_verres,
+                                },
+                                taille: currentGeneration.taille,
+                                couleur_monture:
+                                    currentGeneration.couleur_monture,
+                                couleur_branche:
+                                    currentGeneration.couleur_branche,
+                                couleur_verre: currentGeneration.couleur_verres,
+                            }),
+                        });
+
+                        if (response.ok) {
+                            alert("✅ Lunettes enregistrées avec succès !");
+                            setTimeout(() => {
+                                window.location.href = "/collection";
+                            }, 1000);
+                        } else {
+                            alert("Erreur lors de l'enregistrement");
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Enregistrer cette création`;
+                        }
+                    } catch (error) {
+                        console.error("Erreur:", error);
+                        alert("Erreur lors de l'enregistrement");
+                        saveBtn.disabled = false;
+                    }
+                });
+        }
+    </script>
+
+    <style>
+        .ia-container {
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .page-title {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #c9dbfd;
+            opacity: 0.55;
+            letter-spacing: 0.04em;
+            text-align: center;
+            margin: 2rem 0 3rem 0;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem 0;
+            color: #232537;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        #user-prompt {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        #user-prompt:focus {
+            outline: none;
+            border-color: #4a6bff;
+        }
+
+        .generate-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #4a6bff 0%, #3a5bef 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(74, 107, 255, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a6bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-card {
+            background: #f0f7ff;
+            border-left: 4px solid #4a6bff;
+            margin-top: 1.5rem;
+        }
+
+        .result-card h3 {
+            margin: 0 0 1rem 0;
+            color: #4a6bff;
+        }
+
+        .ia-explanation {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .preview-card {
+            position: sticky;
+            top: 2rem;
+        }
+
+        .svg-preview {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .placeholder-text {
+            color: #999;
+            text-align: center;
+        }
+
+        .specs {
+            margin-top: 1.5rem;
+        }
+
+        .specs h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #232537;
+        }
+
+        .specs-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        .spec-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .price {
+            color: #4a6bff;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .save-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #28a745 0%, #20803a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(40, 167, 69, 0.3);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .auth-notice {
+            text-align: center;
+            padding: 2rem 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+
+        .auth-notice p {
+            margin-bottom: 1rem;
+            color: #666;
+        }
+
+        .login-link {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: #4a6bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .login-link:hover {
+            background: #3a5bef;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-card {
+                position: static;
+            }
+
+            .page-title {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</Layout>

@@ -676,11 +676,13 @@ const tailles = ["S", "M", "L"];
                     .querySelectorAll(".mat-btn")
                     .forEach((b) => b.classList.remove("selected"));
                 btn.classList.add("selected");
+                const prixMat = parseFloat(btn.dataset.prix) || 0;
                 selection.materiau = {
                     id: btn.dataset.id,
                     nom: btn.dataset.nom,
+                    prix_materiaux: prixMat,
                 };
-                selection.prix_monture = parseFloat(btn.dataset.prix) || 0;
+                selection.prix_monture = prixMat;
                 updatePrix();
                 updateRecap();
             };
@@ -736,11 +738,13 @@ const tailles = ["S", "M", "L"];
                     .querySelectorAll(".verre-btn")
                     .forEach((b) => b.classList.remove("selected"));
                 btn.classList.add("selected");
+                const prixVer = parseFloat(btn.dataset.prix) || 0;
                 selection.verre = {
                     id: btn.dataset.id,
                     nom: btn.dataset.nom,
+                    prix_verres: prixVer,
                 };
-                selection.prix_verre = parseFloat(btn.dataset.prix) || 0;
+                selection.prix_verre = prixVer;
                 updatePrix();
                 updateRecap();
             };

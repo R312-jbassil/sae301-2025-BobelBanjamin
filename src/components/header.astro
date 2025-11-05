@@ -25,6 +25,7 @@ if (Astro.cookies?.get("pb_auth")) {
         <nav class="header-nav">
             <a href="/collection" class="nav-link">Collection</a>
             <a href="/personnalisation" class="nav-link">Personnalisation</a>
+            <a href="/ia-generator" class="nav-link">IA Générateur</a>
             <a href="/a-propos" class="nav-link">À propos</a>
         </nav>
         <div class="header-auth">
@@ -429,20 +430,29 @@ if (Astro.cookies?.get("pb_auth")) {
     }
 
     // Mettre à jour le compteur du panier
-    function updatePanierCount() {
-        const panier = JSON.parse(localStorage.getItem("panier") || "[]");
+    async function updatePanierCount() {
         const badge = document.getElementById("panier-count");
-        if (badge) {
-            const count = panier.length;
-            badge.textContent = count > 0 ? count : "";
-            badge.style.display = count > 0 ? "flex" : "none";
+        if (!badge) return;
+
+        try {
+            const response = await fetch("/api/panier");
+            const data = await response.json();
+
+            if (data.success) {
+                const count = data.items.length;
+                badge.textContent = count > 0 ? count : "";
+                badge.style.display = count > 0 ? "flex" : "none";
+            }
+        } catch (error) {
+            console.error("Erreur chargement panier:", error);
+            badge.textContent = "";
+            badge.style.display = "none";
         }
     }
 
     // Mettre à jour au chargement
     updatePanierCount();
 
-    // Mettre à jour quand le localStorage change
-    window.addEventListener("storage", updatePanierCount);
+    // Mettre à jour quand on dispatch l'événement
     window.addEventListener("panier-updated", updatePanierCount);
 </script>

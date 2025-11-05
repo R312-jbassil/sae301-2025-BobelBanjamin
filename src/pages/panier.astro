@@ -259,75 +259,118 @@ const user = pb.authStore.model;
 
     <script>
         // Charger et afficher le panier
-        function afficherPanier() {
-            const panier = JSON.parse(localStorage.getItem("panier") || "[]");
+        async function afficherPanier() {
             const panierItems = document.getElementById("panier-items");
             const panierVide = document.getElementById("panier-vide");
             const panierContenu = document.getElementById("panier-contenu");
             const totalPrix = document.getElementById("total-prix");
 
-            if (panier.length === 0) {
+            try {
+                // Charger depuis l'API
+                const response = await fetch("/api/panier");
+                const data = await response.json();
+
+                if (!data.success || data.items.length === 0) {
+                    panierVide.style.display = "block";
+                    panierContenu.style.display = "none";
+                    return;
+                }
+
+                const panier = data.items;
+                console.log("🛒 Items du panier:", panier);
+                panierVide.style.display = "none";
+                panierContenu.style.display = "grid";
+
+                // Calculer le total (utiliser le prix de la lunette)
+                const total = panier.reduce((sum, item) => {
+                    const lunette = item.expand?.id_lunette;
+                    const prixLunette = parseFloat(lunette?.total) || 0;
+                    console.log("Item:", item, "Lunette total:", prixLunette);
+                    return sum + prixLunette;
+                }, 0);
+                console.log("💰 Total calculé:", total);
+                totalPrix.textContent = total.toFixed(2) + " €";
+
+                // Afficher les items
+                panierItems.innerHTML = panier
+                    .map((item) => {
+                        const lunette = item.expand?.id_lunette;
+                        const nom = lunette?.nom_modele || "Lunette";
+                        const prix = parseFloat(lunette?.total) || 0;
+                        console.log(`Article: ${nom}, Prix: ${prix}`);
+
+                        return `
+                    <div class="panier-item">
+                        <div class="item-info">
+                            <h3>${nom}</h3>
+                            <p class="item-description">Paire de lunettes personnalisée</p>
+                            <p class="item-prix">${prix.toFixed(2)} €</p>
+                        </div>
+                        <button class="btn-supprimer" data-item-id="${item.id}" title="Supprimer du panier">
+                            Supprimer
+                        </button>
+                    </div>
+                `;
+                    })
+                    .join("");
+
+                // Ajouter les événements de suppression
+                document.querySelectorAll(".btn-supprimer").forEach((btn) => {
+                    btn.addEventListener("click", async () => {
+                        const itemId = btn.dataset.itemId;
+
+                        try {
+                            const response = await fetch("/api/panier", {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ itemId }),
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                await afficherPanier();
+                                window.dispatchEvent(
+                                    new Event("panier-updated"),
+                                );
+                            } else {
+                                alert("Erreur lors de la suppression");
+                            }
+                        } catch (error) {
+                            console.error("Erreur:", error);
+                            alert("Erreur lors de la suppression");
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Erreur chargement panier:", error);
                 panierVide.style.display = "block";
                 panierContenu.style.display = "none";
-                return;
             }
-
-            panierVide.style.display = "none";
-            panierContenu.style.display = "grid";
-
-            // Calculer le total
-            const total = panier.reduce((sum, item) => sum + item.prix, 0);
-            totalPrix.textContent = total.toFixed(2) + " €";
-
-            // Afficher les items
-            panierItems.innerHTML = panier
-                .map(
-                    (item, index) => `
-                <div class="panier-item">
-                    <div class="item-info">
-                        <h3>${item.nom}</h3>
-                        <p class="item-description">Paire de lunettes personnalisée</p>
-                        <p class="item-prix">${item.prix.toFixed(2)} €</p>
-                    </div>
-                    <button class="btn-supprimer" data-index="${index}" title="Supprimer du panier">
-                        Supprimer
-                    </button>
-                </div>
-            `,
-                )
-                .join("");
-
-            // Ajouter les événements de suppression
-            document.querySelectorAll(".btn-supprimer").forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    const index = parseInt(btn.dataset.index);
-                    panier.splice(index, 1);
-                    localStorage.setItem("panier", JSON.stringify(panier));
-                    afficherPanier();
-                    window.dispatchEvent(new Event("panier-updated"));
-                });
-            });
         }
 
         // Commander
         document
             .getElementById("btn-commander")
             .addEventListener("click", async () => {
-                const panier = JSON.parse(
-                    localStorage.getItem("panier") || "[]",
-                );
+                // Charger le panier depuis l'API
+                const response = await fetch("/api/panier");
+                const data = await response.json();
 
-                if (panier.length === 0) {
+                if (!data.success || data.items.length === 0) {
                     alert("Votre panier est vide");
                     return;
                 }
 
+                const panier = data.items;
                 const btnCommander = document.getElementById("btn-commander");
                 btnCommander.disabled = true;
                 btnCommander.textContent = "Commande en cours...";
 
                 try {
-                    const response = await fetch("/api/commande", {
+                    const commandeResponse = await fetch("/api/commande", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -335,17 +378,26 @@ const user = pb.authStore.model;
                         body: JSON.stringify({
                             items: panier,
                             total: panier.reduce(
-                                (sum, item) => sum + item.prix,
+                                (sum, item) => sum + item.total,
                                 0,
                             ),
                         }),
                     });
 
-                    const result = await response.json();
+                    const result = await commandeResponse.json();
 
                     if (result.success) {
-                        // Vider le panier
-                        localStorage.setItem("panier", "[]");
+                        // Vider le panier en supprimant tous les items
+                        for (const item of panier) {
+                            await fetch("/api/panier", {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ itemId: item.id }),
+                            });
+                        }
+
                         window.dispatchEvent(new Event("panier-updated"));
 
                         // Notification de succès

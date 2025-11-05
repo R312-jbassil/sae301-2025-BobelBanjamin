@@ -1,244 +1,230 @@
 ---
-import Header from "../components/header.astro";
-import "../styles/global.css";
+import Layout from "../layouts/Layout.astro";
 const success = Astro.url.searchParams.get("success") === "true";
 ---
 
-<Header />
-
-<html lang="fr">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <main>
-            <div class="auth-bgword">INSCRIPTION</div>
-            <div class="auth-tabs">
-                <a href="/login" class="tab">Connexion</a>
-                <a href="/register" class="tab active">Inscription</a>
-            </div>
-            <form class="auth-box" id="register-form">
-                <label>
-                    <span>EMAIL</span>
-                    <div class="input-icon">
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="votre@email.com"
-                            required
-                        />
-                    </div>
-                </label>
-                <label>
-                    <span>MOT DE PASSE</span>
-                    <div class="input-icon">
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="********"
-                            required
-                            minlength="8"
-                        />
-                    </div>
-                </label>
-                <label>
-                    <span>CONFIRMER</span>
-                    <div class="input-icon">
-                        <input
-                            type="password"
-                            name="passwordConfirm"
-                            placeholder="********"
-                            required
-                            minlength="8"
-                        />
-                    </div>
-                </label>
-                <label>
-                    <span>NOM</span>
-                    <div class="input-icon">
-                        <input
-                            type="text"
-                            name="name"
-                            placeholder="Votre nom"
-                            required
-                        />
-                    </div>
-                </label>
-                <button type="submit" class="auth-btn">CRÉER LE COMPTE</button>
-                <div
-                    id="status"
-                    style="color:#d32f2f; margin-top:.9em; text-align:center; display:none"
-                >
+<Layout title="Inscription">
+    <main>
+        <div class="auth-bgword">INSCRIPTION</div>
+        <div class="auth-tabs">
+            <a href="/login" class="tab">Connexion</a>
+            <a href="/register" class="tab active">Inscription</a>
+        </div>
+        <form class="auth-box" id="register-form">
+            <label>
+                <span>EMAIL</span>
+                <div class="input-icon">
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="votre@email.com"
+                        required
+                    />
                 </div>
-            </form>
-        </main>
-        <script type="module">
-            const form = document.getElementById("register-form");
-            const status = document.getElementById("status");
+            </label>
+            <label>
+                <span>MOT DE PASSE</span>
+                <div class="input-icon">
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="********"
+                        required
+                        minlength="8"
+                    />
+                </div>
+            </label>
+            <label>
+                <span>CONFIRMER</span>
+                <div class="input-icon">
+                    <input
+                        type="password"
+                        name="passwordConfirm"
+                        placeholder="********"
+                        required
+                        minlength="8"
+                    />
+                </div>
+            </label>
+            <label>
+                <span>NOM</span>
+                <div class="input-icon">
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Votre nom"
+                        required
+                    />
+                </div>
+            </label>
+            <button type="submit" class="auth-btn">CRÉER LE COMPTE</button>
+            <div
+                id="status"
+                style="color:#d32f2f; margin-top:.9em; text-align:center; display:none"
+            >
+            </div>
+        </form>
+    </main>
+    <script type="module">
+        const form = document.getElementById("register-form");
+        const status = document.getElementById("status");
 
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                status.style.display = "none";
-                const email = e.target.email.value;
-                const password = e.target.password.value;
-                const passwordConfirm = e.target.passwordConfirm.value;
-                const name = e.target.name.value;
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            status.style.display = "none";
+            const email = e.target.email.value;
+            const password = e.target.password.value;
+            const passwordConfirm = e.target.passwordConfirm.value;
+            const name = e.target.name.value;
 
-                if (!name || name.trim().length < 2) {
-                    status.textContent = "❌ Le nom est obligatoire";
+            if (!name || name.trim().length < 2) {
+                status.textContent = "❌ Le nom est obligatoire";
+                status.style.display = "block";
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                status.textContent =
+                    "❌ Les mots de passe ne correspondent pas";
+                status.style.display = "block";
+                return;
+            }
+            if (password.length < 8) {
+                status.textContent = "❌ Mot de passe trop court";
+                status.style.display = "block";
+                return;
+            }
+            try {
+                const res = await fetch("/api/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        passwordConfirm,
+                        name,
+                    }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    status.style.color = "#388e3c";
+                    status.textContent = "✅ Compte créé avec succès !";
                     status.style.display = "block";
-                    return;
-                }
-
-                if (password !== passwordConfirm) {
+                    setTimeout(() => (window.location.href = "/"), 1200);
+                } else {
+                    status.style.color = "#d32f2f";
                     status.textContent =
-                        "❌ Les mots de passe ne correspondent pas";
-                    status.style.display = "block";
-                    return;
-                }
-                if (password.length < 8) {
-                    status.textContent = "❌ Mot de passe trop court";
-                    status.style.display = "block";
-                    return;
-                }
-                try {
-                    const res = await fetch("/api/register", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            email,
-                            password,
-                            passwordConfirm,
-                            name,
-                        }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        status.style.color = "#388e3c";
-                        status.textContent = "✅ Compte créé avec succès !";
-                        status.style.display = "block";
-                        setTimeout(() => (window.location.href = "/"), 1200);
-                    } else {
-                        status.style.color = "#d32f2f";
-                        status.textContent =
-                            "❌ " +
-                            (data.error || "Erreur lors de l'inscription");
-                        status.style.display = "block";
-                    }
-                } catch (e) {
-                    status.textContent = "❌ Erreur serveur";
+                        "❌ " + (data.error || "Erreur lors de l'inscription");
                     status.style.display = "block";
                 }
-            };
-        </script>
-        <style>
-            /* Même css que login */
-            body {
-                font-family: "Plus Jakarta Sans", sans-serif;
-                background: #fff;
-                color: #232537;
+            } catch (e) {
+                status.textContent = "❌ Erreur serveur";
+                status.style.display = "block";
             }
-            main {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-            }
+        };
+    </script>
+    <style>
+        /* Même css que login */
+        body {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            background: #fff;
+            color: #232537;
+        }
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .auth-bgword {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #c9dbfd;
+            opacity: 0.55;
+            letter-spacing: 0.04em;
+            margin: 2rem 0 2.6rem 0;
+        }
+        .auth-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.6rem;
+        }
+        .tab {
+            border: 1.6px solid #2563eb;
+            border-right: none;
+            color: #232537;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            width: 180px;
+            text-align: center;
+            padding: 0.7rem 0 0.7rem 0;
+        }
+        .tab:last-child {
+            border-right: 1.6px solid #2563eb;
+        }
+        .tab.active {
+            background: #f6f7f9;
+            color: #2563eb;
+        }
+        .auth-box {
+            background: #fff;
+            border: 1.6px solid #2563eb;
+            border-radius: 8px;
+            box-shadow: 0 8px 30px 0 #2563eb14;
+            width: 380px;
+            max-width: 95vw;
+            padding: 2rem 2rem 1.4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+        label span {
+            font-weight: 700;
+            font-size: 0.89rem;
+            color: #232537;
+            margin-bottom: 0.12em;
+            display: inline-block;
+        }
+        .input-icon {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.4rem;
+        }
+        input {
+            font-family: inherit;
+            font-size: 1rem;
+            border: 2px solid #232537;
+            background: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 5px;
+            width: 100%;
+        }
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        .auth-btn {
+            background: #232537;
+            color: #fff;
+            font-weight: 700;
+            padding: 1rem 0;
+            border: none;
+            font-size: 1.08rem;
+            border-radius: 0.4rem;
+            margin-top: 1.3rem;
+            letter-spacing: 0.045em;
+            cursor: pointer;
+        }
+        @media (max-width: 600px) {
             .auth-bgword {
-                font-size: 6rem;
-                font-weight: 900;
-                color: #c9dbfd;
-                opacity: 0.55;
-                letter-spacing: 0.04em;
-                margin: 2rem 0 2.6rem 0;
-            }
-            .auth-tabs {
-                display: flex;
-                justify-content: center;
-                margin-bottom: 1.6rem;
-            }
-            .tab {
-                border: 1.6px solid #2563eb;
-                border-right: none;
-                color: #232537;
-                font-size: 1rem;
-                font-weight: 600;
-                text-decoration: none;
-                width: 180px;
-                text-align: center;
-                padding: 0.7rem 0 0.7rem 0;
-            }
-            .tab:last-child {
-                border-right: 1.6px solid #2563eb;
-            }
-            .tab.active {
-                background: #f6f7f9;
-                color: #2563eb;
+                font-size: 3.1rem;
             }
             .auth-box {
-                background: #fff;
-                border: 1.6px solid #2563eb;
-                border-radius: 8px;
-                box-shadow: 0 8px 30px 0 #2563eb14;
-                width: 380px;
-                max-width: 95vw;
-                padding: 2rem 2rem 1.4rem 2rem;
-                display: flex;
-                flex-direction: column;
-                gap: 1.1rem;
+                padding: 1.1rem;
             }
-            label span {
-                font-weight: 700;
-                font-size: 0.89rem;
-                color: #232537;
-                margin-bottom: 0.12em;
-                display: inline-block;
-            }
-            .input-icon {
-                display: flex;
-                align-items: center;
-                gap: 0.6rem;
-                margin-bottom: 0.4rem;
-            }
-            input {
-                font-family: inherit;
-                font-size: 1rem;
-                border: 2px solid #232537;
-                background: #fff;
-                padding: 0.8rem 1rem;
-                border-radius: 5px;
-                width: 100%;
-            }
-            input:focus {
-                outline: none;
-                border-color: #2563eb;
-            }
-            .auth-btn {
-                background: #232537;
-                color: #fff;
-                font-weight: 700;
-                padding: 1rem 0;
-                border: none;
-                font-size: 1.08rem;
-                border-radius: 0.4rem;
-                margin-top: 1.3rem;
-                letter-spacing: 0.045em;
-                cursor: pointer;
-            }
-            @media (max-width: 600px) {
-                .auth-bgword {
-                    font-size: 3.1rem;
-                }
-                .auth-box {
-                    padding: 1.1rem;
-                }
-            }
-        </style>
-    </body>
-</html>
+        }
+    </style>
+</Layout>

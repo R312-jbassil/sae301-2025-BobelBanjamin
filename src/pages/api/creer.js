@@ -41,6 +41,13 @@ export async function POST({ request, cookies }) {
             couleur_verres: body.couleur_verre || '#7fa1e7',
         };
 
+        // Calculer le prix total
+        const prixMateriaux = parseFloat(body.materiau?.prix_materiaux) || 0;
+        const prixVerres = parseFloat(body.verre?.prix_verres) || 0;
+        const total = prixMateriaux + prixVerres;
+
+        console.log('💰 Calcul du prix - Matériaux:', prixMateriaux, '+ Verres:', prixVerres, '= Total:', total);
+
         const lunetteData = {
             nom_modele: body.nom_modele,
             taille_monture: body.taille,
@@ -49,7 +56,8 @@ export async function POST({ request, cookies }) {
             couleur_verres: body.couleur_verre || '#7fa1e7',
             materiaux_lunettes: body.materiau?.id, // Avec un 's' !
             id_verres: body.verre?.id,
-            code_svg: JSON.stringify(svgData) // Sauvegarder les couleurs en JSON
+            code_svg: JSON.stringify(svgData), // Sauvegarder les couleurs en JSON
+            total: total
         };
 
         console.log('📦 Données envoyées à PocketBase:', lunetteData);
