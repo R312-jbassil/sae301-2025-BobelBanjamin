@@ -1,16 +1,52 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import pb from "../lib/pb.js";
+import PocketBase from "pocketbase";
 
-// Données dynamiques via l'API PocketBase
-let data = {};
-try {
-    const res = await fetch("/api/personnalisation");
-    data = await res.json();
-} catch (e) {
-    data = { materiauxMonture: [], materiauxVerres: [] };
+// Vérifier si l'utilisateur est connecté
+let isAuthenticated = false;
+const authCookie = Astro.cookies.get("pb_auth");
+
+if (authCookie && authCookie.value) {
+    try {
+        const pbAuth = new PocketBase(
+            import.meta.env.PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090",
+        );
+        pbAuth.authStore.loadFromCookie(authCookie.value);
+        isAuthenticated = pbAuth.authStore.isValid && !!pbAuth.authStore.model;
+        console.log(
+            "Auth check - Connecté:",
+            isAuthenticated,
+            "User:",
+            pbAuth.authStore.model?.email,
+        );
+    } catch (e) {
+        console.error("Erreur vérification auth:", e);
+        isAuthenticated = false;
+    }
 }
 
-// Remplace ces palettes par des collections si besoin
+// Rediriger vers login si non connecté
+if (!isAuthenticated) {
+    console.log("❌ Non connecté - redirection vers /login");
+    return Astro.redirect("/login");
+}
+
+console.log("✅ Connecté - accès autorisé");
+
+// Chargement des données PocketBase côté serveur
+let data = { materiauxMonture: [], materiauxVerres: [] };
+try {
+    data.materiauxMonture = await pb
+        .collection("materiaux_lunette")
+        .getFullList();
+    data.materiauxVerres = await pb
+        .collection("materiaux_verres")
+        .getFullList();
+} catch (e) {
+    console.error("Erreur chargement données:", e);
+}
+
 const couleursMonture = [
     "#222d3a",
     "#a78b61",
@@ -20,6 +56,7 @@ const couleursMonture = [
     "#6e8898",
     "#f7b267",
 ];
+const couleursBranche = [...couleursMonture];
 const couleursVerre = [
     "#7fa1e7",
     "#fee440",
@@ -30,409 +67,806 @@ const couleursVerre = [
     "#e5e7eb",
     "#8a76a1",
 ];
-const couleursBranche = [
-    "#222d3a",
-    "#a78b61",
-    "#ffbe76",
-    "#118ab2",
-    "#d95d39",
-    "#6e8898",
-    "#f7b267",
-];
 const tailles = ["S", "M", "L"];
 ---
 
-<pre>{JSON.stringify(data, null, 2)}</pre>
-
 <Layout title="Personnalisation lunettes">
-    <h1 style="font-size:2em;font-weight:800;margin-bottom:1.2em;">
-        Personnalisez vos lunettes
-    </h1>
+    <main class="custom-container">
+        <div class="auth-bgword">PERSONNALISATION</div>
+        <div class="custom-cols">
+            <div class="left-preview">
+                <div class="img-bg">
+                    <!-- SVG lunettes, ids ajoutés -->
+                    <svg
+                        id="svg-lunettes"
+                        viewBox="0 0 595.28 350"
+                        width="320"
+                        height="120"
+                    >
+                        <g>
+                            <g id="branches">
+                                <path
+                                    id="branch1"
+                                    fill="#706f6f"
+                                    d="M108.83,155.14s49.35-5.57,54.93-8.76,11.14-7.96,19.5-9.55,64.48-11.14,64.48-11.14c0,0,7.16-1.99,17.51,5.57s33.04,31.84,39.4,31.05c6.37-.8,9.55-9.55,7.56-13.53s-40.67-32.75-47.36-34.63c-9.53-2.68-21.89-2.39-37.02,0-15.12,2.39-116.22,23.34-116.22,23.34,0,0-13.13,6.12-2.79,17.66Z"
+                                ></path>
+                                <path
+                                    id="branch2"
+                                    fill="#a78b61"
+                                    d="M308.24,150.76s-.31,6.15-3.98,5.57c-4.97-.78-35.82-33.83-46.17-32.24,0,0,8.53,2.71,18.46,11.64,6.51,5.86,34.42,37.85,31.69,15.03Z"
+                                ></path>
+                                <path
+                                    id="branch3"
+                                    fill="#a78b61"
+                                    d="M374.79,179.65l90.54-29.78s22.13-5.63,25.35-4.02,17.71,30.58,17.71,33.8-2.42,14.01-5.63,14.89c-2.33.64-5.33.11-6.84-4.21-1.41-4.02-6.84-31.73-12.47-31.47s-50.7,15.95-50.7,15.95c0,0-13.28,6.44-18.91,11.27s-32.19,11.27-32.19,11.27c0,0-9.66-7.65-6.84-17.71Z"
+                                ></path>
+                                <path
+                                    id="branch4"
+                                    fill="#706f6f"
+                                    d="M381.34,180.1s102.27-35.19,107.85-31.99c0,0-18.2,2.49-41.76,11.88s-66.09,22.03-66.09,22.03v-1.92Z"
+                                ></path>
+                                <path
+                                    id="branch5"
+                                    fill="#706f6f"
+                                    d="M485.36,158.06s3.26,0,4.98,3.45,9.77,24.71,9.77,24.71c0,0,.77,4.98,5.17-2.68,0,0-3.07,9.56-5.36,6.79s-9.77-26.33-9.77-26.33c0,0-2.87-6.74-4.79-5.94Z"
+                                ></path>
+                            </g>
+                            <g id="monture">
+                                <path
+                                    id="monture-main"
+                                    fill="#222d3a"
+                                    d="M385.31,180.81c-.24-3.41-9.57-5.22-12.71-6.4-3.14-1.18-15.7,1.96-15.7,1.96-12.17-3.14-54.55-9.03-78.88-9.03s-32.57,11.38-35.32,10.99c-2.75-.39-17.27-.78-23.55-1.96-6.28-1.18-5.1-14.13-39.25-26.48-34.14-12.35-68.29-12.42-68.29-12.42-13.35,4.66-6.76,18.49-6.76,18.49l2.05,6.35c4.32,2.03,3.14,10.52,4.71,23.08s7.46,28.65,14.13,38.46c6.67,9.81,31.79,20.8,44.35,21.19s23.55-1.96,31.79-15.31c8.24-13.34,16.88-36.89,16.88-36.89l10.2,1.57s2.91.31,5.35,3.09,4.43,8.03,7.6,17.31c7.56,22.1,25.12,39.25,25.12,39.25,0,0,5.6,7.43,33.44,12.66,23.08,4.34,42.7-2.46,42.7-2.46,17.72-7.17,21.63-44.96,21.63-44.96,0,0,1.83-13.3,7.81-16.65,7.37-4.14,8.27-4.44,12.71-5.32,3.61-.71.24-13.13,0-16.54Z"
+                                ></path>
+                            </g>
+                            <g id="verres">
+                                <path
+                                    id="verreG"
+                                    fill="#7fa1e7"
+                                    opacity="0.65"
+                                    d="M116.32,162.87c-.88,6.05.4,37.41,11.44,55.31s37.04,21.35,41.37,21.31,18.51,1.02,24.47-9.27c4.97-8.59,13.17-43.48,9.12-53.05-6.26-14.82-40.4-24.02-40.4-24.02,0,0-26.85-5.46-33.82-4.46,0,0-9.97-.96-12.17,14.17Z"
+                                ></path>
+                                <path
+                                    id="verreD"
+                                    fill="#7fa1e7"
+                                    opacity="0.65"
+                                    d="M247.32,192.54s-1.09-9.55,19.57-16.69c11.76-4.06,60.46,3.23,60.46,3.23,0,0,19.09,4.06,21.71,8.28,2.62,4.22,9.46,17.24,8.29,37.97-1.14,20.21-7.31,26.8-12.61,30.31,0,0-7.1,4.93-21.34,5.93-26.65,1.88-37.01-1.14-46.19-7.73-29.88-21.46-29.88-61.3-29.88-61.3Z"
+                                ></path>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+                <input
+                    id="nom-modele"
+                    name="nom_modele"
+                    class="input-box"
+                    placeholder="Nom du modèle"
+                    style="width:90%;margin:1em 0 0.5em 0;"
+                />
+            </div>
+            <form id="form-config" class="config-panel">
+                <div class="config-step">
+                    <div class="step-title">ÉTAPE 1/4 : MATÉRIAU</div>
+                    <div class="options-row">
+                        {
+                            data.materiauxMonture.map((mat) => (
+                                <button
+                                    type="button"
+                                    class="mat-btn"
+                                    data-id={mat.id}
+                                    data-nom={mat.nom_materiaux}
+                                    data-prix={mat.prix_materiaux}
+                                >
+                                    <span class="option-name">
+                                        {mat.nom_materiaux}
+                                    </span>
+                                    <span class="option-price">
+                                        {mat.prix_materiaux}€
+                                    </span>
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="config-step">
+                    <div class="step-title">ÉTAPE 2/4 : TYPE DE VERRES</div>
+                    <div class="options-row">
+                        {
+                            data.materiauxVerres.map((verre) => (
+                                <button
+                                    type="button"
+                                    class="verre-btn"
+                                    data-id={verre.id}
+                                    data-nom={verre.nom_verres}
+                                    data-prix={verre.prix_verres}
+                                >
+                                    <span class="option-name">
+                                        {verre.nom_verres}
+                                    </span>
+                                    <span class="option-price">
+                                        {verre.prix_verres}€
+                                    </span>
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
 
-    <!-- SVG lunettes, ids ajoutés ! -->
-    <div class="preview-svg" style="margin-bottom:2em;">
-        <svg
-            id="svg-lunettes"
-            viewBox="0 0 595.28 350"
-            width="390"
-            height="140"
-        >
-            <g>
-                <g id="branches">
-                    <path
-                        id="branch1"
-                        fill="#706f6f"
-                        d="M108.83,155.14s49.35-5.57,54.93-8.76,11.14-7.96,19.5-9.55,64.48-11.14,64.48-11.14c0,0,7.16-1.99,17.51,5.57s33.04,31.84,39.4,31.05c6.37-.8,9.55-9.55,7.56-13.53s-40.67-32.75-47.36-34.63c-9.53-2.68-21.89-2.39-37.02,0-15.12,2.39-116.22,23.34-116.22,23.34,0,0-13.13,6.12-2.79,17.66Z"
-                    ></path>
-                    <path
-                        id="branch2"
-                        fill="#a78b61"
-                        d="M308.24,150.76s-.31,6.15-3.98,5.57c-4.97-.78-35.82-33.83-46.17-32.24,0,0,8.53,2.71,18.46,11.64,6.51,5.86,34.42,37.85,31.69,15.03Z"
-                    ></path>
-                    <path
-                        id="branch3"
-                        fill="#a78b61"
-                        d="M374.79,179.65l90.54-29.78s22.13-5.63,25.35-4.02,17.71,30.58,17.71,33.8-2.42,14.01-5.63,14.89c-2.33.64-5.33.11-6.84-4.21-1.41-4.02-6.84-31.73-12.47-31.47s-50.7,15.95-50.7,15.95c0,0-13.28,6.44-18.91,11.27s-32.19,11.27-32.19,11.27c0,0-9.66-7.65-6.84-17.71Z"
-                    ></path>
-                    <path
-                        id="branch4"
-                        fill="#706f6f"
-                        d="M381.34,180.1s102.27-35.19,107.85-31.99c0,0-18.2,2.49-41.76,11.88s-66.09,22.03-66.09,22.03v-1.92Z"
-                    ></path>
-                    <path
-                        id="branch5"
-                        fill="#706f6f"
-                        d="M485.36,158.06s3.26,0,4.98,3.45,9.77,24.71,9.77,24.71c0,0,.77,4.98,5.17-2.68,0,0-3.07,9.56-5.36,6.79s-9.77-26.33-9.77-26.33c0,0-2.87-6.74-4.79-5.94Z"
-                    ></path>
-                </g>
-                <g id="monture">
-                    <path
-                        id="monture-main"
-                        fill="#222d3a"
-                        d="M385.31,180.81c-.24-3.41-9.57-5.22-12.71-6.4-3.14-1.18-15.7,1.96-15.7,1.96-12.17-3.14-54.55-9.03-78.88-9.03s-32.57,11.38-35.32,10.99c-2.75-.39-17.27-.78-23.55-1.96-6.28-1.18-5.1-14.13-39.25-26.48-34.14-12.35-68.29-12.42-68.29-12.42-13.35,4.66-6.76,18.49-6.76,18.49l2.05,6.35c4.32,2.03,3.14,10.52,4.71,23.08s7.46,28.65,14.13,38.46c6.67,9.81,31.79,20.8,44.35,21.19s23.55-1.96,31.79-15.31c8.24-13.34,16.88-36.89,16.88-36.89l10.2,1.57s2.91.31,5.35,3.09,4.43,8.03,7.6,17.31c7.56,22.1,25.12,39.25,25.12,39.25,0,0,5.6,7.43,33.44,12.66,23.08,4.34,42.7-2.46,42.7-2.46,17.72-7.17,21.63-44.96,21.63-44.96,0,0,1.83-13.3,7.81-16.65,7.37-4.14,8.27-4.44,12.71-5.32,3.61-.71.24-13.13,0-16.54Z"
-                    ></path>
-                </g>
-                <g id="verres">
-                    <path
-                        id="verreG"
-                        fill="#7fa1e7"
-                        opacity="0.65"
-                        d="M116.32,162.87c-.88,6.05.4,37.41,11.44,55.31s37.04,21.35,41.37,21.31,18.51,1.02,24.47-9.27c4.97-8.59,13.17-43.48,9.12-53.05-6.26-14.82-40.4-24.02-40.4-24.02,0,0-26.85-5.46-33.82-4.46,0,0-9.97-.96-12.17,14.17Z"
-                    ></path>
-                    <path
-                        id="verreD"
-                        fill="#7fa1e7"
-                        opacity="0.65"
-                        d="M247.32,192.54s-1.09-9.55,19.57-16.69c11.76-4.06,60.46,3.23,60.46,3.23,0,0,19.09,4.06,21.71,8.28,2.62,4.22,9.46,17.24,8.29,37.97-1.14,20.21-7.31,26.8-12.61,30.31,0,0-7.1,4.93-21.34,5.93-26.65,1.88-37.01-1.14-46.19-7.73-29.88-21.46-29.88-61.3-29.88-61.3Z"
-                    ></path>
-                </g>
-            </g>
-        </svg>
-    </div>
+                <div class="config-step">
+                    <div class="step-title">ÉTAPE 3/4 : COULEUR MONTURE</div>
+                    <div class="options-grid">
+                        {
+                            couleursMonture.map((col) => (
+                                <button
+                                    type="button"
+                                    class="color-btn"
+                                    style={`background:${col}`}
+                                    data-col={col}
+                                />
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="config-step">
+                    <div class="step-title">ÉTAPE 4/4 : COULEUR BRANCHES</div>
+                    <div class="options-grid">
+                        {
+                            couleursBranche.map((col) => (
+                                <button
+                                    type="button"
+                                    class="color-branche-btn"
+                                    style={`background:${col}`}
+                                    data-col={col}
+                                />
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="config-step">
+                    <div class="step-title">TAILLE</div>
+                    <div class="options-row">
+                        {
+                            tailles.map((t) => (
+                                <button
+                                    type="button"
+                                    class="taille-btn"
+                                    data-taille={t}
+                                >
+                                    {t}
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="config-step">
+                    <div class="step-title">COULEUR VERRES</div>
+                    <div class="options-grid">
+                        {
+                            couleursVerre.map((col) => (
+                                <button
+                                    type="button"
+                                    class="color-verre-btn"
+                                    style={`background:${col}`}
+                                    data-col={col}
+                                />
+                            ))
+                        }
+                    </div>
+                </div>
+                <div class="config-step" style="margin-top:2em;">
+                    <span id="prix-total" class="prix-total-label"
+                        >Total : 0€</span
+                    >
+                </div>
+                <div class="config-step" style="margin-top:1.5em;">
+                    <button class="save-btn" style="width:100%"
+                        >Sauvegarder</button
+                    >
+                </div>
+                <div class="config-step"><div id="recapitulatif"></div></div>
+            </form>
+        </div>
+    </main>
 
-    <!-- Configurateur -->
-    <form id="form-config" method="POST" style="margin-bottom:1em;">
-        <!-- Matériau monture -->
-        <div>
-            <label style="font-weight:600;">Matériau de la monture :</label>
-            <div style="display:flex;flex-wrap:wrap;gap:1em;margin-top:0.7em;">
-                {
-                    data.materiauxMonture.map((mat) => (
-                        <button
-                            class="mat-btn"
-                            type="button"
-                            data-id={mat.id}
-                            data-nom={mat.nom_materiaux}
-                            data-prix={mat.prix_materiaux}
-                        >
-                            {mat.nom_materiaux}{" "}
-                            <span style="font-size:.95em;color:#2563eb;">
-                                {mat.prix_materiaux}€
-                            </span>
-                        </button>
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Couleur monture -->
-        <div style="margin-top:1em;">
-            <label>Couleur de la monture :</label>
-            <div style="display:flex;flex-wrap:wrap;gap:0.8em;">
-                {
-                    couleursMonture.map((col) => (
-                        <button
-                            type="button"
-                            class="color-btn"
-                            style={`background:${col}`}
-                            data-col={col}
-                        />
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Taille -->
-        <div style="margin-top:1em;">
-            <label>Taille monture :</label>
-            <div style="display:flex;gap:0.7em;">
-                {
-                    tailles.map((t) => (
-                        <button
-                            type="button"
-                            class="taille-btn"
-                            data-taille={t}
-                        >
-                            {t}
-                        </button>
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Type de verres -->
-        <div style="margin-top:1em;">
-            <label style="font-weight:600;">Type de verres :</label>
-            <div style="display:flex;flex-wrap:wrap;gap:1em;margin-top:0.7em;">
-                {
-                    data.materiauxVerres.map((verre) => (
-                        <button
-                            class="verre-btn"
-                            type="button"
-                            data-id={verre.id}
-                            data-nom={verre.nom_verres}
-                            data-prix={verre.prix_verres}
-                        >
-                            {verre.nom_verres}{" "}
-                            <span style="font-size:.95em;color:#2563eb;">
-                                {verre.prix_verres}€
-                            </span>
-                        </button>
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Couleur verres -->
-        <div style="margin-top:1em;">
-            <label>Couleur des verres :</label>
-            <div style="display:flex;flex-wrap:wrap;gap:0.8em;">
-                {
-                    couleursVerre.map((col) => (
-                        <button
-                            type="button"
-                            class="color-verre-btn"
-                            style={`background:${col}`}
-                            data-col={col}
-                        />
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Couleur branches -->
-        <div style="margin-top:1em;">
-            <label>Couleur des branches :</label>
-            <div style="display:flex;flex-wrap:wrap;gap:0.8em;">
-                {
-                    couleursBranche.map((col) => (
-                        <button
-                            type="button"
-                            class="color-branche-btn"
-                            style={`background:${col}`}
-                            data-col={col}
-                        />
-                    ))
-                }
-            </div>
-        </div>
-        <!-- Nom du modèle -->
-        <div style="margin-top:1em;">
-            <label for="nom-modele">Nom du modèle :</label>
-            <input
-                id="nom-modele"
-                name="nom_modele"
-                class="input-box"
-                placeholder="MaTulwa"
-                required
-            />
-        </div>
-        <!-- Prix -->
-        <div style="margin:1em 0;">
-            <span
-                id="prix-total"
-                style="font-size:1.05em;color:#2563eb;font-weight:700;"
-                >Total : 0€</span
-            >
-        </div>
-        <!-- Sauvegarder -->
-        <button type="submit" class="save-btn"
-            >Enregistrer ma configuration</button
-        >
-    </form>
-    <div id="recapitulatif"></div>
-
-    <script>
-        const selection = { prix_monture: 0, prix_verre: 0 };
-        // Matériau monture
-        document.querySelectorAll(".mat-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".mat-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.materiau = {
-                        id: btn.dataset.id,
-                        nom: btn.dataset.nom,
-                    };
-                    selection.prix_monture = parseFloat(btn.dataset.prix) || 0;
-                    updateRecap();
-                    updatePrix();
-                }),
-        );
-        // Couleur monture
-        document.querySelectorAll(".color-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".color-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.couleur_monture = btn.dataset.col;
-                    document
-                        .querySelector("#monture path")
-                        .setAttribute("fill", selection.couleur_monture);
-                    updateRecap();
-                }),
-        );
-        // Taille
-        document.querySelectorAll(".taille-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".taille-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.taille = btn.dataset.taille;
-                    updateRecap();
-                }),
-        );
-        // Type verres
-        document.querySelectorAll(".verre-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".verre-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.verre = {
-                        id: btn.dataset.id,
-                        nom: btn.dataset.nom,
-                    };
-                    selection.prix_verre = parseFloat(btn.dataset.prix) || 0;
-                    updateRecap();
-                    updatePrix();
-                }),
-        );
-        // Couleur verres
-        document.querySelectorAll(".color-verre-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".color-verre-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.couleur_verre = btn.dataset.col;
-                    document.querySelectorAll("#verres path").forEach((el) => {
-                        el.setAttribute("fill", selection.couleur_verre);
-                        el.setAttribute("opacity", 0.65);
-                    });
-                    updateRecap();
-                }),
-        );
-        // Couleur branches
-        document.querySelectorAll(".color-branche-btn").forEach(
-            (btn) =>
-                (btn.onclick = () => {
-                    document
-                        .querySelectorAll(".color-branche-btn")
-                        .forEach((b) => b.classList.remove("selected"));
-                    btn.classList.add("selected");
-                    selection.couleur_branche = btn.dataset.col;
-                    document
-                        .querySelectorAll("#branches path")
-                        .forEach((el) =>
-                            el.setAttribute("fill", selection.couleur_branche),
-                        );
-                    updateRecap();
-                }),
-        );
-
-        function updatePrix() {
-            document.getElementById("prix-total").textContent =
-                "Total : " +
-                (
-                    (selection.prix_monture || 0) + (selection.prix_verre || 0)
-                ).toFixed(2) +
-                "€";
-        }
-        function updateRecap() {
-            let recap = `<h3 style="font-size:1.05em;margin-top:1em;">Résumé :</h3><ul style="padding-left:1em;font-size:.97em;">`;
-            if (selection.materiau)
-                recap += `<li>Matériau : ${selection.materiau.nom} (${selection.prix_monture}€)</li>`;
-            if (selection.couleur_monture)
-                recap += `<li>Couleur monture : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_monture};border-radius:3px;"></span></li>`;
-            if (selection.taille)
-                recap += `<li>Taille : ${selection.taille}</li>`;
-            if (selection.verre)
-                recap += `<li>Type verre : ${selection.verre.nom} (${selection.prix_verre}€)</li>`;
-            if (selection.couleur_verre)
-                recap += `<li>Couleur verre : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_verre};border-radius:3px;"></span></li>`;
-            if (selection.couleur_branche)
-                recap += `<li>Couleur branche : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_branche};border-radius:3px;"></span></li>`;
-            recap += `</ul>`;
-            document.getElementById("recapitulatif").innerHTML = recap;
-        }
-        document.getElementById("form-config").onsubmit = async (evt) => {
-            evt.preventDefault();
-            const res = await fetch("/api/creer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...selection,
-                    nom_modele: document.getElementById("nom-modele").value,
-                }),
-            });
-            if (res.ok) alert("Configuration sauvegardée !");
-            else alert("Erreur lors de la sauvegarde !");
-        };
-    </script>
     <style>
-        .color-btn,
-        .color-verre-btn,
-        .color-branche-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 7px;
-            border: 2px solid #eee;
-            cursor: pointer;
-            margin: 4px;
+        body {
+            background: #f6f8fe;
         }
-        .selected {
-            border: 2.5px solid #2563eb !important;
+
+        .custom-container {
+            width: 100vw;
+            min-height: 100vh;
+            padding-bottom: 2em;
+            font-family: "Plus Jakarta Sans", Arial, sans-serif;
         }
+
+        .auth-bgword {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #c9dbfd;
+            opacity: 0.55;
+            letter-spacing: 0.04em;
+            margin: 2rem 0 2.6rem 0;
+            text-align: center;
+        }
+
+        .custom-cols {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 7vw;
+            margin-top: -1.6rem;
+        }
+
+        .left-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 450px;
+            max-width: 520px;
+            background: #e8f0fe7a;
+            border-radius: 22px;
+            box-shadow: 0 8px 38px #2563eb14;
+            padding: 2.2em 1.2em 2em 1.2em;
+            position: sticky;
+            top: 2rem;
+            align-self: flex-start;
+        }
+
+        .img-bg {
+            width: 100%;
+            max-width: 450px;
+            min-height: 260px;
+            background: linear-gradient(140deg, #f7f7fa 38%, #e3ecfe 100%);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2.2em;
+            box-shadow: 0 0px 14px #2563eb13;
+            border: 1.8px solid #e5e7eb;
+        }
+
+        .img-bg svg {
+            width: 95%;
+            height: auto;
+        }
+
         .input-box {
-            padding: 0.5em;
-            border-radius: 6px;
-            border: 1.1px solid #d8e0ed;
-            background: #232537;
+            padding: 0.76em 1.3em;
+            border-radius: 8px;
+            border: 1.5px solid #bdd8ee;
+            background: #f6f8fe;
             font-size: 1em;
-            color: #fff;
+            color: #1a2150;
+            margin-bottom: 1.2em;
+            letter-spacing: 0.03em;
+            font-weight: 500;
+            box-shadow: 0 0 0 2.5px #e3edf8 inset;
         }
+        .input-box:focus {
+            border-color: #2563eb;
+            background: #fff;
+        }
+
         .save-btn {
-            margin-top: 20px;
-            padding: 0.7em 2em;
-            border-radius: 6px;
-            background: linear-gradient(90deg, #2563eb, #3b82f6);
+            margin-top: 0;
+            padding: 1.1em 2em;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #2563eb, #67d5fa);
             color: #fff;
             font-weight: 700;
+            font-size: 1.15em;
+            box-shadow: 0 3px 16px #2563eb19;
+            border: none;
+            letter-spacing: 0.04em;
+            transition: all 0.2s ease;
             cursor: pointer;
+            width: 100%;
         }
+        .save-btn:hover {
+            background: linear-gradient(90deg, #3569ed, #47c0ef);
+            box-shadow: 0 8px 38px #2563eb28;
+            transform: translateY(-2px);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        .config-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 540px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8em;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 32px #2863eb15;
+            padding: 2.1em 2.5em 2.5em 2.5em;
+        }
+
+        .config-step {
+            margin-bottom: 2em;
+        }
+        .step-title {
+            font-weight: 700;
+            font-size: 1.17em;
+            text-transform: uppercase;
+            color: #215;
+            margin-bottom: 0.7em;
+            letter-spacing: 0.06em;
+        }
+
+        .options-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8em;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8em;
+            margin-top: 0.7em;
+            max-width: 400px;
+        }
+
         .mat-btn,
         .verre-btn,
         .taille-btn {
-            margin: 2px 12px 2px 0;
-            padding: 0.5em 1.2em;
-            border-radius: 7px;
-            border: 1.4px solid #ccc;
-            background: #fff;
+            min-width: 140px;
+            padding: 1em 1.5em;
+            border-radius: 10px;
+            border: 2px solid #e2eaf8;
+            background: linear-gradient(94deg, #f9fbff 60%, #e4eafc 100%);
+            font-weight: 600;
+            color: #215;
+            font-size: 1em;
             cursor: pointer;
+            box-shadow: 0 1px 8px #2563eb13;
+            transition: all 0.18s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
         }
+
+        .option-name {
+            font-weight: 600;
+            color: #215;
+            font-size: 0.95em;
+        }
+
+        .option-price {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 1.05em;
+            margin-left: auto;
+            padding-left: 1em;
+        }
+
         .mat-btn.selected,
         .verre-btn.selected,
         .taille-btn.selected {
-            border: 2.2px solid #2563eb;
-            background: #eaf3fe;
-            color: #013;
+            border: 2.5px solid #2563eb;
+            background: #e7f3ff;
+            box-shadow: 0 3px 14px #2563eb15;
         }
-        form > div {
+
+        .mat-btn.selected .option-name,
+        .verre-btn.selected .option-name,
+        .taille-btn.selected .option-name {
+            color: #2563eb;
+        }
+
+        .mat-btn.selected .option-price,
+        .verre-btn.selected .option-price,
+        .taille-btn.selected .option-price {
+            color: #2563eb;
+            font-weight: 800;
+        }
+
+        .mat-btn:hover,
+        .verre-btn:hover,
+        .taille-btn:hover {
+            border-color: #539cf3;
+            transform: translateY(-1px);
+        }
+
+        .color-btn,
+        .color-branche-btn,
+        .color-verre-btn {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            border: 2.6px solid #e2eaf8;
+            box-shadow: 0 1px 8px #2563eb13;
+            cursor: pointer;
+            transition: all 0.13s;
+            outline: none;
+        }
+        .color-btn.selected,
+        .color-branche-btn.selected,
+        .color-verre-btn.selected {
+            border: 3px solid #2563eb;
+            box-shadow: 0 0 13px #2563eb18;
+        }
+        .color-btn:hover,
+        .color-branche-btn:hover,
+        .color-verre-btn:hover {
+            border-color: #3569ed;
+        }
+
+        .prix-total-label {
+            font-size: 1.25em;
+            color: #2563eb;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            margin-top: 2em;
+        }
+
+        /* Notification de succès */
+        .success-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+            z-index: 10000;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 400px;
+        }
+
+        .success-notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-icon svg {
+            color: white;
+        }
+
+        .notification-text {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        @media (max-width: 768px) {
+            .success-notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                transform: translateY(-100px);
+            }
+
+            .success-notification.show {
+                transform: translateY(0);
+            }
+        }
+
+        #recapitulatif {
+            background: #f6f8fe;
+            padding: 1.3em 1em;
+            border-radius: 10px;
             margin-top: 1.2em;
+            font-size: 1.05em;
+            color: #185;
+            box-shadow: 0 2px 9px #222d3a08;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .custom-cols {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 3em;
+            }
+
+            .left-preview {
+                position: relative;
+                top: 0;
+                min-width: auto;
+                max-width: 100%;
+            }
+
+            .img-bg {
+                width: 100%;
+                max-width: 100%;
+                min-height: 200px;
+            }
+
+            .img-bg svg {
+                width: 90%;
+            }
+            .left-preview,
+            .config-panel {
+                max-width: 100vw;
+            }
+        }
+        @media (max-width: 600px) {
+            .auth-bgword {
+                font-size: 3rem;
+                margin: 1rem 0 1.5rem 0;
+            }
+            .config-panel {
+                padding: 1.2em 0.3em 1.7em 0.3em;
+            }
+            .left-preview {
+                padding: 1.1em 0.4em 1.1em 0.4em;
+            }
         }
     </style>
+
+    <script>
+        // Fonction pour afficher une notification de succès élégante
+        function showSuccessNotification(nomModele) {
+            // Créer l'élément de notification
+            const notification = document.createElement("div");
+            notification.className = "success-notification";
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="notification-text">
+                        <div class="notification-title">Lunettes sauvegardées !</div>
+                        <div class="notification-subtitle">${nomModele} a été ajouté à votre collection</div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Animation d'entrée
+            setTimeout(() => {
+                notification.classList.add("show");
+            }, 10);
+
+            // Retirer après 4 secondes
+            setTimeout(() => {
+                notification.classList.remove("show");
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        const selection = { prix_monture: 0, prix_verre: 0 };
+
+        // Matériau monture
+        document.querySelectorAll(".mat-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".mat-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.materiau = {
+                    id: btn.dataset.id,
+                    nom: btn.dataset.nom,
+                };
+                selection.prix_monture = parseFloat(btn.dataset.prix) || 0;
+                updatePrix();
+                updateRecap();
+            };
+        });
+
+        // Couleur monture
+        document.querySelectorAll(".color-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".color-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.couleur_monture = btn.dataset.col;
+                const monturePath = document.querySelector("#monture path");
+                if (monturePath) {
+                    monturePath.setAttribute("fill", selection.couleur_monture);
+                }
+                updateRecap();
+            };
+        });
+
+        // Couleur branches
+        document.querySelectorAll(".color-branche-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".color-branche-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.couleur_branche = btn.dataset.col;
+                document.querySelectorAll("#branches path").forEach((el) => {
+                    el.setAttribute("fill", selection.couleur_branche);
+                });
+                updateRecap();
+            };
+        });
+
+        // Taille
+        document.querySelectorAll(".taille-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".taille-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.taille = btn.dataset.taille;
+                updateRecap();
+            };
+        });
+
+        // Type verres
+        document.querySelectorAll(".verre-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".verre-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.verre = {
+                    id: btn.dataset.id,
+                    nom: btn.dataset.nom,
+                };
+                selection.prix_verre = parseFloat(btn.dataset.prix) || 0;
+                updatePrix();
+                updateRecap();
+            };
+        });
+
+        // Couleur verres
+        document.querySelectorAll(".color-verre-btn").forEach((btn) => {
+            btn.onclick = () => {
+                document
+                    .querySelectorAll(".color-verre-btn")
+                    .forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                selection.couleur_verre = btn.dataset.col;
+                document.querySelectorAll("#verres path").forEach((el) => {
+                    el.setAttribute("fill", selection.couleur_verre);
+                    el.setAttribute("opacity", "0.65");
+                });
+                updateRecap();
+            };
+        });
+
+        function updatePrix() {
+            const prixEl = document.getElementById("prix-total");
+            if (prixEl) {
+                const total =
+                    (selection.prix_monture || 0) + (selection.prix_verre || 0);
+                prixEl.textContent = `Total : ${total.toFixed(2)}€`;
+            }
+        }
+
+        function updateRecap() {
+            const recapEl = document.getElementById("recapitulatif");
+            if (!recapEl) return;
+
+            let recap = `<h3 style="font-size:1.05em;margin-top:1em;color:#444;">Résumé :</h3><ul style="padding-left:1em;font-size:.97em;">`;
+
+            if (selection.materiau) {
+                recap += `<li>Matériau : ${selection.materiau.nom} (${selection.prix_monture}€)</li>`;
+            }
+            if (selection.couleur_monture) {
+                recap += `<li>Couleur monture : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_monture};border-radius:3px;border:1px solid #ddd;"></span></li>`;
+            }
+            if (selection.couleur_branche) {
+                recap += `<li>Couleur branches : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_branche};border-radius:3px;border:1px solid #ddd;"></span></li>`;
+            }
+            if (selection.taille) {
+                recap += `<li>Taille : ${selection.taille}</li>`;
+            }
+            if (selection.verre) {
+                recap += `<li>Type verre : ${selection.verre.nom} (${selection.prix_verre}€)</li>`;
+            }
+            if (selection.couleur_verre) {
+                recap += `<li>Couleur verres : <span style="display:inline-block;width:16px;height:16px;background:${selection.couleur_verre};border-radius:3px;border:1px solid #ddd;"></span></li>`;
+            }
+
+            recap += `</ul>`;
+            recapEl.innerHTML = recap;
+        }
+
+        // Bouton sauvegarder
+        document
+            .querySelector(".save-btn")
+            .addEventListener("click", async () => {
+                const nomModele = document.getElementById("nom-modele").value;
+
+                if (!nomModele) {
+                    alert("Veuillez entrer un nom pour votre modèle !");
+                    return;
+                }
+
+                if (!selection.materiau || !selection.verre) {
+                    alert(
+                        "Veuillez sélectionner au moins un matériau et un type de verres !",
+                    );
+                    return;
+                }
+
+                try {
+                    console.log("📤 Envoi des données:", {
+                        ...selection,
+                        nom_modele: nomModele,
+                    });
+
+                    const res = await fetch("/api/creer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            ...selection,
+                            nom_modele: nomModele,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        console.log("✅ Réponse serveur:", data);
+
+                        // Créer une notification élégante
+                        showSuccessNotification(nomModele);
+
+                        // Réinitialiser le formulaire
+                        document.getElementById("nom-modele").value = "";
+                        document
+                            .querySelectorAll(".selected")
+                            .forEach((el) => el.classList.remove("selected"));
+                        Object.keys(selection).forEach(
+                            (key) => delete selection[key],
+                        );
+                        selection.prix_monture = 0;
+                        selection.prix_verre = 0;
+                        updatePrix();
+                        updateRecap();
+
+                        // Rediriger vers la collection après 2 secondes
+                        setTimeout(() => {
+                            window.location.href = "/collection";
+                        }, 2000);
+                    } else {
+                        const error = await res.json();
+                        alert(
+                            `Erreur lors de la sauvegarde : ${error.error || "Erreur inconnue"}`,
+                        );
+                    }
+                } catch (e) {
+                    console.error("Erreur:", e);
+                    alert("Erreur lors de la sauvegarde !");
+                }
+            });
+    </script>
 </Layout>

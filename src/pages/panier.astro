@@ -1,0 +1,413 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PocketBase from "pocketbase";
+
+// Vérifier l'authentification
+const pb = new PocketBase(
+    import.meta.env.PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090",
+);
+
+if (Astro.cookies?.get("pb_auth")) {
+    try {
+        pb.authStore.loadFromCookie(Astro.cookies.get("pb_auth").value);
+    } catch (e) {
+        console.error("Erreur chargement cookie:", e);
+    }
+}
+
+if (!pb.authStore.isValid) {
+    return Astro.redirect("/login");
+}
+
+const user = pb.authStore.model;
+---
+
+<Layout title="Mon Panier">
+    <div class="panier-container">
+        <div class="auth-bgword">MON PANIER</div>
+
+        <div id="panier-vide" class="panier-vide" style="display: none;">
+            <p>Votre panier est vide</p>
+            <a href="/collection" class="btn-collection">Voir mes créations</a>
+        </div>
+
+        <div id="panier-contenu" class="panier-contenu">
+            <div id="panier-items" class="panier-items">
+                <!-- Items seront ajoutés par JavaScript -->
+            </div>
+
+            <div class="panier-resume">
+                <h2>Résumé</h2>
+                <div class="resume-ligne">
+                    <span>Sous-total</span>
+                    <span id="total-prix">0.00 €</span>
+                </div>
+                <button id="btn-commander" class="btn-commander">
+                    Passer commande
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .panier-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .auth-bgword {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #c9dbfd;
+            opacity: 0.55;
+            letter-spacing: 0.04em;
+            margin: 2rem 0 2.6rem 0;
+            text-align: center;
+        }
+
+        .panier-vide {
+            text-align: center;
+            padding: 4rem 3rem;
+            background: white;
+            border: 2px dashed #e5e7eb;
+            border-radius: 12px;
+        }
+
+        .panier-vide p {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        .btn-collection {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-collection:hover {
+            background: #1d4ed8;
+        }
+
+        .panier-contenu {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .panier-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .panier-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2rem;
+            align-items: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .panier-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: #d1d5db;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .item-info h3 {
+            font-size: 1.1rem;
+            color: #1f2937;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .item-description {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .item-prix {
+            font-size: 1.2rem;
+            color: #1f2937;
+            font-weight: 700;
+            margin-top: 0.3rem;
+        }
+
+        .btn-supprimer {
+            padding: 0;
+            background: none;
+            color: #ef4444;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .btn-supprimer:hover {
+            color: #dc2626;
+            text-decoration: underline;
+        }
+
+        .panier-resume {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .panier-resume h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .resume-ligne {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            padding: 1.2rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .resume-ligne span:first-child {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        #total-prix {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #1f2937;
+        }
+
+        .btn-commander {
+            width: 100%;
+            padding: 1rem;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-commander:hover {
+            background: #059669;
+        }
+
+        .btn-commander:active {
+            transform: scale(0.98);
+        }
+
+        .btn-commander:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .auth-bgword {
+                font-size: 3rem;
+                margin: 1rem 0 1.5rem 0;
+            }
+
+            .panier-contenu {
+                grid-template-columns: 1fr;
+            }
+
+            .panier-resume {
+                position: static;
+            }
+        }
+    </style>
+
+    <script>
+        // Charger et afficher le panier
+        function afficherPanier() {
+            const panier = JSON.parse(localStorage.getItem("panier") || "[]");
+            const panierItems = document.getElementById("panier-items");
+            const panierVide = document.getElementById("panier-vide");
+            const panierContenu = document.getElementById("panier-contenu");
+            const totalPrix = document.getElementById("total-prix");
+
+            if (panier.length === 0) {
+                panierVide.style.display = "block";
+                panierContenu.style.display = "none";
+                return;
+            }
+
+            panierVide.style.display = "none";
+            panierContenu.style.display = "grid";
+
+            // Calculer le total
+            const total = panier.reduce((sum, item) => sum + item.prix, 0);
+            totalPrix.textContent = total.toFixed(2) + " €";
+
+            // Afficher les items
+            panierItems.innerHTML = panier
+                .map(
+                    (item, index) => `
+                <div class="panier-item">
+                    <div class="item-info">
+                        <h3>${item.nom}</h3>
+                        <p class="item-description">Paire de lunettes personnalisée</p>
+                        <p class="item-prix">${item.prix.toFixed(2)} €</p>
+                    </div>
+                    <button class="btn-supprimer" data-index="${index}" title="Supprimer du panier">
+                        Supprimer
+                    </button>
+                </div>
+            `,
+                )
+                .join("");
+
+            // Ajouter les événements de suppression
+            document.querySelectorAll(".btn-supprimer").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const index = parseInt(btn.dataset.index);
+                    panier.splice(index, 1);
+                    localStorage.setItem("panier", JSON.stringify(panier));
+                    afficherPanier();
+                    window.dispatchEvent(new Event("panier-updated"));
+                });
+            });
+        }
+
+        // Commander
+        document
+            .getElementById("btn-commander")
+            .addEventListener("click", async () => {
+                const panier = JSON.parse(
+                    localStorage.getItem("panier") || "[]",
+                );
+
+                if (panier.length === 0) {
+                    alert("Votre panier est vide");
+                    return;
+                }
+
+                const btnCommander = document.getElementById("btn-commander");
+                btnCommander.disabled = true;
+                btnCommander.textContent = "Commande en cours...";
+
+                try {
+                    const response = await fetch("/api/commande", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            items: panier,
+                            total: panier.reduce(
+                                (sum, item) => sum + item.prix,
+                                0,
+                            ),
+                        }),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Vider le panier
+                        localStorage.setItem("panier", "[]");
+                        window.dispatchEvent(new Event("panier-updated"));
+
+                        // Notification de succès
+                        showNotification("✓ Commande passée avec succès !");
+
+                        // Rediriger vers collection après 2 secondes
+                        setTimeout(() => {
+                            window.location.href = "/collection";
+                        }, 2000);
+                    } else {
+                        throw new Error(
+                            result.error || "Erreur lors de la commande",
+                        );
+                    }
+                } catch (error) {
+                    console.error("Erreur:", error);
+                    alert("Erreur lors de la commande. Veuillez réessayer.");
+                    btnCommander.disabled = false;
+                    btnCommander.textContent = "Passer commande";
+                }
+            });
+
+        // Fonction de notification
+        function showNotification(message) {
+            const notif = document.createElement("div");
+            notif.className = "cart-notification";
+            notif.textContent = message;
+            document.body.appendChild(notif);
+
+            setTimeout(() => notif.classList.add("show"), 10);
+            setTimeout(() => {
+                notif.classList.remove("show");
+                setTimeout(() => notif.remove(), 300);
+            }, 2000);
+        }
+
+        // Styles pour la notification
+        const style = document.createElement("style");
+        style.textContent = `
+            .cart-notification {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: #10b981;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+                font-weight: 600;
+                z-index: 10000;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.3s ease;
+            }
+            .cart-notification.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Charger au démarrage
+        afficherPanier();
+    </script>
+</Layout>
