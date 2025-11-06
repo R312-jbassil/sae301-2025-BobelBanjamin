@@ -54,7 +54,7 @@ import Layout from "../layouts/Layout.astro";
             const password = e.target.password.value;
 
             try {
-                const res = await fetch("/api/login", {
+                const res = await fetch("/apis/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password }),

@@ -267,7 +267,7 @@ const user = pb.authStore.model;
 
             try {
                 // Charger depuis l'API
-                const response = await fetch("/api/panier");
+                const response = await fetch("/apis/panier");
                 const data = await response.json();
 
                 if (!data.success || data.items.length === 0) {
@@ -320,7 +320,7 @@ const user = pb.authStore.model;
                         const itemId = btn.dataset.itemId;
 
                         try {
-                            const response = await fetch("/api/panier", {
+                            const response = await fetch("/apis/panier", {
                                 method: "DELETE",
                                 headers: {
                                     "Content-Type": "application/json",
@@ -356,7 +356,7 @@ const user = pb.authStore.model;
             .getElementById("btn-commander")
             .addEventListener("click", async () => {
                 // Charger le panier depuis l'API
-                const response = await fetch("/api/panier");
+                const response = await fetch("/apis/panier");
                 const data = await response.json();
 
                 if (!data.success || data.items.length === 0) {
@@ -370,7 +370,7 @@ const user = pb.authStore.model;
                 btnCommander.textContent = "Commande en cours...";
 
                 try {
-                    const commandeResponse = await fetch("/api/commande", {
+                    const commandeResponse = await fetch("/apis/commande", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -389,7 +389,7 @@ const user = pb.authStore.model;
                     if (result.success) {
                         // Vider le panier en supprimant tous les items
                         for (const item of panier) {
-                            await fetch("/api/panier", {
+                            await fetch("/apis/panier", {
                                 method: "DELETE",
                                 headers: {
                                     "Content-Type": "application/json",

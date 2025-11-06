@@ -828,7 +828,7 @@ const tailles = ["S", "M", "L"];
                         nom_modele: nomModele,
                     });
 
-                    const res = await fetch("/api/creer", {
+                    const res = await fetch("/apis/creer", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({

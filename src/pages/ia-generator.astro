@@ -150,12 +150,9 @@ const verres = await pb.collection("materiaux_verres").getFullList();
 
         // Fonction de génération IA avec OpenRouter
         async function generateWithIA(prompt) {
-            const loading = document.getElementById("loading");
-            loading.style.display = "block";
-
             try {
                 // Appel à l'API de génération
-                const response = await fetch("/api/generate-ia", {
+                const response = await fetch("/apis/generate-ia", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -372,11 +369,14 @@ const verres = await pb.collection("materiaux_verres").getFullList();
                     try {
                         generation = await generateWithIA(prompt);
                     } catch (apiError) {
-                        console.warn("API IA non disponible, utilisation du fallback:", apiError);
+                        console.warn(
+                            "API IA non disponible, utilisation du fallback:",
+                            apiError,
+                        );
                         // Si l'API échoue, utiliser la version de secours
                         generation = await generateWithIAFallback(prompt);
                     }
-                    
+
                     currentGeneration = generation;
 
                     // Afficher le résultat
@@ -422,7 +422,7 @@ const verres = await pb.collection("materiaux_verres").getFullList();
                     saveBtn.textContent = "Enregistrement...";
 
                     try {
-                        const response = await fetch("/api/creer", {
+                        const response = await fetch("/apis/creer", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({

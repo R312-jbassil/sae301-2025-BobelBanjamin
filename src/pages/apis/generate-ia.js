@@ -4,12 +4,12 @@ export async function POST({ request }) {
 
         // Détection automatique de l'URL du site
         const host = request.headers.get('host') || 'localhost:4321';
-        const protocol = host.includes('localhost') || host.includes('127.0.0.1')
-            ? 'http'
+        const protocol = host.includes('localhost') || host.includes('127.0.0.1') 
+            ? 'http' 
             : 'https';
-        const siteUrl = import.meta.env.SITE ||
-            import.meta.env.PUBLIC_PRODUCTION_URL ||
-            `${protocol}://${host}`;
+        const siteUrl = import.meta.env.SITE || 
+                       import.meta.env.PUBLIC_PRODUCTION_URL || 
+                       `${protocol}://${host}`;
 
         console.log('🌐 Site URL détectée:', siteUrl);
 
@@ -78,7 +78,7 @@ Choisis les meilleures options et réponds avec le JSON.`;
                 .replace(/```json\n?/g, '')
                 .replace(/```\n?/g, '')
                 .trim();
-
+            
             parsedResponse = JSON.parse(cleanedResponse);
         } catch (parseError) {
             console.error('Erreur parsing JSON:', parseError);
