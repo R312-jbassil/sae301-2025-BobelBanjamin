@@ -9,7 +9,7 @@ const authCookie = Astro.cookies.get("pb_auth");
 
 if (authCookie && authCookie.value) {
     try {
-        const pbAuth = new PocketBase("http://127.0.0.1:8090");
+        const pbAuth = new PocketBase("sae301.banjamin-bobel.com:443");
         pbAuth.authStore.loadFromCookie(authCookie.value);
         isAuthenticated = pbAuth.authStore.isValid && !!pbAuth.authStore.model;
         userId = pbAuth.authStore.model?.id;
