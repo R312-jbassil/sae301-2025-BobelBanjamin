@@ -1,0 +1,241 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// Vérifier les variables d'environnement
+const config = {
+    SITE: import.meta.env.SITE || "❌ Non défini (auto-détection active)",
+    PUBLIC_PRODUCTION_URL:
+        import.meta.env.PUBLIC_PRODUCTION_URL || "❌ Non défini",
+    PUBLIC_POCKETBASE_URL:
+        import.meta.env.PUBLIC_POCKETBASE_URL ||
+        "❌ Non défini (utilise http://127.0.0.1:8090)",
+    OPENROUTER_API_KEY: import.meta.env.OPENROUTER_API_KEY
+        ? "✅ Défini"
+        : "❌ Non défini",
+};
+
+// Tester PocketBase
+let pbStatus = {
+    accessible: false,
+    message: "Vérification...",
+    error: null,
+};
+
+try {
+    const pbUrl =
+        import.meta.env.PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+    const response = await fetch(`${pbUrl}/api/health`, {
+        method: "GET",
+        signal: AbortSignal.timeout(5000), // Timeout de 5 secondes
+    });
+
+    if (response.ok) {
+        pbStatus = {
+            accessible: true,
+            message: "✅ PocketBase est accessible",
+            error: null,
+        };
+    } else {
+        pbStatus = {
+            accessible: false,
+            message: `❌ PocketBase répond mais status: ${response.status}`,
+            error: response.statusText,
+        };
+    }
+} catch (error) {
+    pbStatus = {
+        accessible: false,
+        message: "❌ PocketBase n'est pas accessible",
+        error: error.message,
+    };
+}
+---
+
+<Layout title="Diagnostic de Configuration">
+    <main class="container mx-auto px-4 py-12">
+        <h1 class="text-4xl font-bold mb-8 text-center">
+            🔍 Diagnostic de Configuration
+        </h1>
+
+        <!-- Variables d'environnement -->
+        <section class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">
+                📝 Variables d'Environnement
+            </h2>
+
+            <div class="space-y-4">
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <strong>SITE:</strong>
+                    <code class="block bg-gray-100 p-2 rounded mt-1"
+                        >{config.SITE}</code
+                    >
+                    <p class="text-sm text-gray-600 mt-1">
+                        URL du site (optionnel, auto-détection si vide)
+                    </p>
+                </div>
+
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <strong>PUBLIC_PRODUCTION_URL:</strong>
+                    <code class="block bg-gray-100 p-2 rounded mt-1"
+                        >{config.PUBLIC_PRODUCTION_URL}</code
+                    >
+                    <p class="text-sm text-gray-600 mt-1">
+                        URL de production pour fallback
+                    </p>
+                </div>
+
+                <div
+                    class={`border-l-4 pl-4 ${config.PUBLIC_POCKETBASE_URL.includes("❌") ? "border-red-500" : "border-green-500"}`}
+                >
+                    <strong>PUBLIC_POCKETBASE_URL:</strong>
+                    <code class="block bg-gray-100 p-2 rounded mt-1"
+                        >{config.PUBLIC_POCKETBASE_URL}</code
+                    >
+                    <p class="text-sm text-gray-600 mt-1">
+                        ⚠️ CRITIQUE: URL de PocketBase
+                    </p>
+                </div>
+
+                <div
+                    class={`border-l-4 pl-4 ${config.OPENROUTER_API_KEY.includes("❌") ? "border-red-500" : "border-green-500"}`}
+                >
+                    <strong>OPENROUTER_API_KEY:</strong>
+                    <code class="block bg-gray-100 p-2 rounded mt-1"
+                        >{config.OPENROUTER_API_KEY}</code
+                    >
+                    <p class="text-sm text-gray-600 mt-1">
+                        Clé API pour le générateur IA
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Test PocketBase -->
+        <section
+            class={`rounded-lg shadow-md p-6 mb-8 ${pbStatus.accessible ? "bg-green-50" : "bg-red-50"}`}
+        >
+            <h2 class="text-2xl font-semibold mb-4">🗄️ Status PocketBase</h2>
+
+            <div class="space-y-2">
+                <p class="text-lg font-medium">{pbStatus.message}</p>
+
+                {
+                    pbStatus.error && (
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <strong>Erreur:</strong> {pbStatus.error}
+                        </div>
+                    )
+                }
+
+                <p class="text-sm text-gray-700 mt-4">
+                    URL testée: <code class="bg-gray-200 px-2 py-1 rounded"
+                        >{
+                            import.meta.env.PUBLIC_POCKETBASE_URL ||
+                                "http://127.0.0.1:8090"
+                        }</code
+                    >
+                </p>
+            </div>
+        </section>
+
+        <!-- Conseils -->
+        <section class="bg-yellow-50 rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold mb-4">💡 Que faire ?</h2>
+
+            {
+                !pbStatus.accessible && (
+                    <div class="space-y-4">
+                        <div class="bg-red-100 border-l-4 border-red-500 p-4">
+                            <h3 class="font-bold text-red-800">
+                                ❌ PocketBase n'est pas accessible
+                            </h3>
+                            <p class="text-red-700 mt-2">
+                                La connexion et l'inscription ne fonctionneront
+                                pas tant que PocketBase n'est pas accessible
+                                depuis internet.
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-4 rounded border">
+                            <h4 class="font-semibold mb-2">🔧 Solutions:</h4>
+                            <ol class="list-decimal list-inside space-y-2">
+                                <li>
+                                    <strong>En local:</strong> Vérifiez que
+                                    PocketBase est démarré
+                                    <code class="block bg-gray-100 p-2 rounded mt-1">
+                                        cd pocketbase && ./pocketbase serve
+                                    </code>
+                                </li>
+                                <li>
+                                    <strong>En production:</strong> Déployez
+                                    PocketBase sur votre VPS
+                                    <a
+                                        href="/POCKETBASE_DEPLOYMENT.md"
+                                        class="text-blue-600 underline"
+                                    >
+                                        Voir le guide de déploiement
+                                    </a>
+                                </li>
+                                <li>
+                                    Mettez à jour{" "}
+                                    <code class="bg-gray-200 px-1">
+                                        PUBLIC_POCKETBASE_URL
+                                    </code>{" "}
+                                    dans votre{" "}
+                                    <code class="bg-gray-200 px-1">.env</code>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                pbStatus.accessible && (
+                    <div class="bg-green-100 border-l-4 border-green-500 p-4">
+                        <h3 class="font-bold text-green-800">
+                            ✅ Tout fonctionne!
+                        </h3>
+                        <p class="text-green-700 mt-2">
+                            PocketBase est accessible, la connexion et
+                            l'inscription devraient fonctionner.
+                        </p>
+                    </div>
+                )
+            }
+        </section>
+
+        <!-- Liens utiles -->
+        <section class="mt-8 text-center">
+            <h2 class="text-xl font-semibold mb-4">📚 Documentation</h2>
+            <div class="flex gap-4 justify-center flex-wrap">
+                <a
+                    href="/"
+                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                >
+                    ← Retour à l'accueil
+                </a>
+                <a
+                    href="/login"
+                    class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                >
+                    Tester la connexion
+                </a>
+                <a
+                    href="https://github.com/votre-repo/POCKETBASE_DEPLOYMENT.md"
+                    target="_blank"
+                    class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
+                >
+                    Guide PocketBase
+                </a>
+            </div>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    code {
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+    }
+</style>
