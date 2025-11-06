@@ -1,0 +1,234 @@
+---
+// Test complet de la configuration
+const testResults = {
+    env: {
+        SITE: import.meta.env.SITE || "Non défini",
+        PUBLIC_PRODUCTION_URL: import.meta.env.PUBLIC_PRODUCTION_URL || "Non défini",
+        PUBLIC_POCKETBASE_URL: import.meta.env.PUBLIC_POCKETBASE_URL || "Non défini",
+        OPENROUTER_API_KEY: import.meta.env.OPENROUTER_API_KEY ? "✅ Défini" : "❌ Non défini"
+    },
+    pbTest: null,
+    error: null
+};
+
+// Test de connexion à PocketBase
+try {
+    const pbUrl = import.meta.env.PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090';
+    console.log('Testing PocketBase at:', pbUrl);
+    
+    const response = await fetch(`${pbUrl}/api/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+    });
+    
+    testResults.pbTest = {
+        url: pbUrl,
+        status: response.status,
+        ok: response.ok,
+        message: response.ok ? '✅ PocketBase accessible' : `❌ Status ${response.status}`
+    };
+} catch (error) {
+    testResults.pbTest = {
+        url: import.meta.env.PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090',
+        status: 'Error',
+        ok: false,
+        message: `❌ ${error.message}`
+    };
+    testResults.error = error.message;
+}
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Configuration</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 { color: #60a5fa; margin-bottom: 30px; }
+        h2 { color: #34d399; margin-top: 30px; }
+        .section {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #60a5fa;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        .warning { border-left-color: #f59e0b; }
+        code {
+            background: #1a1a1a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #60a5fa;
+        }
+        .value {
+            color: #34d399;
+            font-weight: bold;
+        }
+        .cmd {
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .cmd code {
+            background: transparent;
+            color: #34d399;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #404040;
+        }
+        th {
+            background: #1a1a1a;
+            color: #60a5fa;
+        }
+        .action {
+            background: #60a5fa;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .action:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Configuration Complète</h1>
+
+    <!-- Variables d'environnement -->
+    <div class="section">
+        <h2>📝 Variables d'Environnement</h2>
+        <table>
+            <tr>
+                <th>Variable</th>
+                <th>Valeur</th>
+            </tr>
+            <tr>
+                <td><code>SITE</code></td>
+                <td class="value">{testResults.env.SITE}</td>
+            </tr>
+            <tr>
+                <td><code>PUBLIC_PRODUCTION_URL</code></td>
+                <td class="value">{testResults.env.PUBLIC_PRODUCTION_URL}</td>
+            </tr>
+            <tr>
+                <td><code>PUBLIC_POCKETBASE_URL</code></td>
+                <td class="value">{testResults.env.PUBLIC_POCKETBASE_URL}</td>
+            </tr>
+            <tr>
+                <td><code>OPENROUTER_API_KEY</code></td>
+                <td class="value">{testResults.env.OPENROUTER_API_KEY}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Test PocketBase -->
+    <div class={`section ${testResults.pbTest?.ok ? 'success' : 'error'}`}>
+        <h2>🗄️ Test PocketBase</h2>
+        <p><strong>URL testée:</strong> <code>{testResults.pbTest?.url}</code></p>
+        <p><strong>Status:</strong> <span class="value">{testResults.pbTest?.message}</span></p>
+        {testResults.error && (
+            <p style="color: #ef4444;"><strong>Erreur:</strong> {testResults.error}</p>
+        )}
+    </div>
+
+    <!-- Instructions -->
+    {!testResults.pbTest?.ok && (
+        <div class="section warning">
+            <h2>⚠️ PocketBase n'est pas accessible</h2>
+            
+            <h3>Sur votre VPS, vérifiez:</h3>
+            
+            <div class="cmd">
+                <code>cat /var/www/sae301/.env</code>
+            </div>
+            <p>Doit contenir:</p>
+            <div class="cmd">
+                <code>PUBLIC_POCKETBASE_URL=https://sae301.banjamin-bobel.com</code>
+            </div>
+
+            <h3>Ensuite, redémarrez:</h3>
+            <div class="cmd">
+                <code>pm2 restart all</code><br/>
+                <code>pm2 logs</code>
+            </div>
+
+            <h3>Vérifiez que PM2 a rechargé le .env:</h3>
+            <div class="cmd">
+                <code>pm2 env 0</code>
+            </div>
+        </div>
+    )}
+
+    {testResults.pbTest?.ok && (
+        <div class="section success">
+            <h2>✅ Configuration OK!</h2>
+            <p>PocketBase est accessible, la connexion devrait fonctionner.</p>
+            <a href="/login" class="action">Tester la connexion</a>
+            <a href="/register" class="action">Tester l'inscription</a>
+        </div>
+    )}
+
+    <!-- Commandes de debug -->
+    <div class="section">
+        <h2>🛠️ Commandes de Debug sur VPS</h2>
+        
+        <h3>1. Vérifier le .env:</h3>
+        <div class="cmd">
+            <code>cat /var/www/sae301/.env</code>
+        </div>
+
+        <h3>2. Vérifier les processus PM2:</h3>
+        <div class="cmd">
+            <code>pm2 list</code><br/>
+            <code>pm2 logs --lines 50</code>
+        </div>
+
+        <h3>3. Forcer le redémarrage avec rechargement du .env:</h3>
+        <div class="cmd">
+            <code>pm2 delete all</code><br/>
+            <code>cd /var/www/sae301</code><br/>
+            <code>pm2 start npm --name "sae301" -- start</code>
+        </div>
+
+        <h3>4. Tester PocketBase directement:</h3>
+        <div class="cmd">
+            <code>curl https://sae301.banjamin-bobel.com/api/health</code>
+        </div>
+
+        <h3>5. Vérifier les variables d'environnement de PM2:</h3>
+        <div class="cmd">
+            <code>pm2 env 0</code>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="/" class="action">← Retour à l'accueil</a>
+        <button onclick="location.reload()" class="action">🔄 Rafraîchir</button>
+    </div>
+</body>
+</html>
