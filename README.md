@@ -1,4 +1,4 @@
-- Nom:
-- Prénom:
-- URL pocketbase: 
-- URL:
+- Nom: bobel
+- Prénom: banjamin
+- URL pocketbase: https://sae301.banjamin-bobel.com/_/
+- URL: https://sae301.banjamin-bobel.com
